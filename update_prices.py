@@ -43,10 +43,9 @@ def update_supabase(isin, price):
     response = requests.patch(url, headers=headers, json=data)
     # result = response.json()
     
-    if response.status_code in [200, 204] and len(result) > 0:
+    if response.status_code in [200, 204]:
         print(f"✅ Database aggiornato con successo: {isin} = {price}")
-    elif len(result) == 0:
-        print(f"⚠️ Attenzione: Supabase dice OK, ma non ha trovato righe con ISIN {isin} o l'RLS blocca l'aggiornamento.")
+  
     else:
         print(f"❌ Errore Supabase: {response.status_code} - {response.text}")
         
