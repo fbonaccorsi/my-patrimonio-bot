@@ -41,12 +41,14 @@ def update_supabase(isin, price):
     data = {"prezzo_unitario": price}
     
     response = requests.patch(url, headers=headers, json=data)
-    if response.status_code in [200, 204]:
+    if response.status_code in [200, 204] and len(result) > 0:
         print(f"✅ Database aggiornato con successo: {isin} = {price}")
+    elif len(result) == 0:
+        print(f"⚠️ Attenzione: Supabase dice OK, ma non ha trovato righe con ISIN {isin} o l'RLS blocca l'aggiornamento.")
     else:
-        print(f"Risposta SQL di Supabase: {response.status_code}")
         print(f"❌ Errore Supabase: {response.status_code} - {response.text}")
-
+        
+    print(f"Risposta SQL di Supabase: {response.status_code}")
 if __name__ == "__main__":
     # Inserisci qui il tuo ISIN
     mio_isin = "IT0005583486"
