@@ -61,6 +61,8 @@ def update_supabase(isin, price):
 if __name__ == "__main__":
     # Inserisci qui il tuo ISIN
     # mio_isin = "IT0005583486"
+    isins = get_all_isins()
+    
     for isin in isins:
         print(f"Ricerca {isin} su Investing...")
         prezzo = get_investing_price(isin)
