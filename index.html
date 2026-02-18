@@ -57,10 +57,10 @@
         
 
                 
-              //  if (pass !== MIA_PASS) {
-                  //  scrivi("ERRORE: Password errata.");
-                 //   return;
-               // }
+                if (pass !== MIA_PASS) {
+                   scrivi("ERRORE: Password errata.");
+                   return;
+                }
                 scrivi("Fase 3: Password OK. Connessione a Supabase...");
 
                 const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
