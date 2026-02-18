@@ -1,4 +1,4 @@
-name: Aggiorna Patrimonio
+name: TEST AGGIORNAMENTO
 
 on:
   workflow_dispatch:
