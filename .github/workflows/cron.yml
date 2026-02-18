@@ -2,8 +2,8 @@ name: Aggiorna Prezzi Patrimonio
 
 on:
   schedule:
-    - cron: '0 * * * *' # Gira ogni ora, spaccata
-  workflow_dispatch: # Ti permette di lanciarlo anche a mano per testare
+    - cron: '0 * * * *'
+  workflow_dispatch:
 
 jobs:
   build:
