@@ -1,10 +1,18 @@
-import os
+6import os
 import requests
 from bs4 import BeautifulSoup
 
 # Configurazione credenziali dai Secrets di GitHub
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+def get_all_isins():
+    """Recupera la lista di ISIN dalla tabella patrimonio"""
+    url = f"{SUPABASE_URL}/rest/v1/patrimonio?select=isin"
+    response = requests.get(url, headers=headers_supabase)
+    if response.status_code == 200:
+        return [item['isin'] for item in response.json() if item.get('isin')]
+    return []
 
 def get_investing_price(isin):
     # URL specifico per i BTP su Investing.com
@@ -52,12 +60,20 @@ def update_supabase(isin, price):
     print(f"Risposta SQL di Supabase: {response.status_code}")
 if __name__ == "__main__":
     # Inserisci qui il tuo ISIN
-    mio_isin = "IT0005583486"
+    # mio_isin = "IT0005583486"
+    for isin in isins:
+        print(f"Ricerca {isin} su Investing...")
+        prezzo = get_investing_price(isin)
     
-    print(f"Avvio recupero prezzo per {mio_isin}...")
-    prezzo_attuale = get_investing_price(mio_isin)
+        print(f"Avvio recupero prezzo per {isin}...")
+        prezzo_attuale = get_investing_price(isin)
     
-    if prezzo_attuale:
-        update_supabase(mio_isin, prezzo_attuale)
-    else:
-        print("Impossibile procedere con l'aggiornamento.")
+        if prezzo_attuale:
+            update_supabase(isin, prezzo_attuale)
+        else:
+            print("Impossibile procedere con l'aggiornamento.")
+
+        time.sleep(2)
+
+    print("Fine aggiornamento.")
+        
