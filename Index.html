@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mio Patrimonio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-900 text-white font-sans p-8">
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-10 text-center">
+            <h1 class="text-4xl font-bold text-emerald-400">📊 Portafoglio BTP</h1>
+            <p class="text-slate-400 mt-2">Aggiornato in tempo reale via GitHub Actions</p>
+        </header>
+
+        <div id="loader" class="text-center">Caricamento dati...</div>
+        
+        <div id="dashboard" class="hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                    <p class="text-sm text-slate-400 uppercase">Valore Totale</p>
+                    <h2 id="totale-valore" class="text-3xl font-bold">€ 0.00</h2>
+                </div>
+                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                    <p class="text-sm text-slate-400 uppercase">Guadagno Totale</p>
+                    <h2 id="totale-guadagno" class="text-3xl font-bold">€ 0.00</h2>
+                </div>
+            </div>
+
+            <table class="w-full text-left bg-slate-800 rounded-2xl overflow-hidden">
+                <thead class="bg-slate-700 text-slate-300">
+                    <tr>
+                        <th class="p-4">ISIN</th>
+                        <th class="p-4">Prezzo</th>
+                        <th class="p-4">Quantità</th>
+                        <th class="p-4">Totale</th>
+                    </tr>
+                </thead>
+                <tbody id="tabella-corpo"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Configura qui le tue credenziali PUBBLICHE (Anon Key)
+        const SB_URL = "IL_TUO_SUPABASE_URL";
+        const SB_KEY = "LA_TUA_SUPABASE_ANON_KEY";
+        const supabase = supabase.createClient(SB_URL, SB_KEY);
+
+        async function caricaDati() {
+            const { data, error } = await supabase.from('patrimonio').select('*');
+            if (error) return console.error(error);
+
+            let html = "";
+            let totaleInvestito = 0;
+            let totaleAttuale = 0;
+
+            data.forEach(r => {
+                const valore = r.prezzo * r.quantita;
+                totaleAttuale += valore;
+                totaleInvestito += (r.prezzo_carico * r.quantita);
+                
+                html += `
+                    <tr class="border-b border-slate-700 hover:bg-slate-750 transition">
+                        <td class="p-4 font-mono font-bold">${r.isin}</td>
+                        <td class="p-4">${r.prezzo}€</td>
+                        <td class="p-4">${r.quantita}</td>
+                        <td class="p-4 font-bold text-emerald-400">${valore.toFixed(2)}€</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('tabella-corpo').innerHTML = html;
+            document.getElementById('totale-valore').innerText = `€ ${totaleAttuale.toFixed(2)}`;
+            document.getElementById('totale-guadagno').innerText = `€ ${(totaleAttuale - totaleInvestito).toFixed(2)}`;
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+        }
+
+        caricaDati();
+    </script>
+</body>
+</html>
