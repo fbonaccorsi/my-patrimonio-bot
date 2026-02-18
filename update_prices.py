@@ -21,7 +21,7 @@ def get_yahoo_price(ticker):
         return None
 
 # Esempio: Aggiorna il BTP
-prezzo_btp = get_yahoo_price("IT0005565392.MI")
+prezzo_btp = get_yahoo_price("IT0005672024.MI")
 
 # Invia a Supabase (Upsert)
 headers = {
