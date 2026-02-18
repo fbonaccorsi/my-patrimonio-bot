@@ -6,6 +6,12 @@ from bs4 import BeautifulSoup
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
+headers_supabase = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}",
+    "Content-Type": "application/json"
+}
+
 def get_all_isins():
     """Recupera la lista di ISIN dalla tabella patrimonio"""
     url = f"{SUPABASE_URL}/rest/v1/patrimonio?select=isin"
