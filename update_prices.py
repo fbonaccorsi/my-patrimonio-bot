@@ -44,6 +44,7 @@ def update_supabase(isin, price):
     if response.status_code in [200, 204]:
         print(f"✅ Database aggiornato con successo: {isin} = {price}")
     else:
+        print(f"Risposta SQL di Supabase: {response.status_code}")
         print(f"❌ Errore Supabase: {response.status_code} - {response.text}")
 
 if __name__ == "__main__":
