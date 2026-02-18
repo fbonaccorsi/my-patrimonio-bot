@@ -116,11 +116,11 @@
         async function salvaNuovo() {
             let isin = document.getElementById('new-isin').value;
             let qta = document.getElementById('new-qta').value;
-            let prezzo = document.getElementById('new-prezzo').value;
+            let prezzo_unitario = document.getElementById('new-prezzo').value;
 
             if (!isin) return alert("Inserisci ISIN");
 
-            let { error } = await client.from('patrimonio').insert([{ isin, quantita: parseFloat(qta), prezzo_unitario: parseFloat(prezzo) }]);
+            let { error } = await client.from('patrimonio').insert([{ isin, quantita: parseFloat(qta), prezzo_unitario: parseFloat(prezzo_unitario) }]);
             if (error) alert(error.message);
             else { toggleForm(); caricaDati(); }
         }
