@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patrimonio Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Animazione fluida per apparizione card */
+        .card-enter { animation: fadeInUp 0.4s ease-out; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-[#0f172a] text-slate-200 p-4 md:p-8">
+
+    <div id="app" class="max-w-5xl mx-auto hidden">
+        <header class="mb-10 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-black text-white tracking-tight">💰 PATRIMONIO</h1>
+                <p id="totale-display" class="text-emerald-400 font-mono text-xl">Calcolo in corso...</p>
+            </div>
+            <button onclick="toggleForm()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20">
+                + AGGIUNGI TITOLO
+            </button>
+        </header>
+
+        <div id="form-aggiunta" class="hidden mb-10 bg-slate-800 p-6 rounded-2xl border border-slate-700 card-enter">
+            <h2 class="text-lg font-bold mb-4">Nuovo Asset</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input type="text" id="new-isin" placeholder="ISIN (es. IT000...)" class="bg-slate-900 border border-slate-700 p-3 rounded-lg focus:outline-none focus:border-emerald-500 text-white">
+                <input type="number" id="new-qta" placeholder="Quantità" class="bg-slate-900 border border-slate-700 p-3 rounded-lg focus:outline-none focus:border-emerald-500 text-white">
+                <input type="number" step="0.01" id="new-prezzo" placeholder="Prezzo" class="bg-slate-900 border border-slate-700 p-3 rounded-lg focus:outline-none focus:border-emerald-500 text-white">
+            </div>
+            <div class="mt-4 flex gap-2">
+                <button onclick="salvaNuovo()" class="bg-emerald-500 text-slate-900 px-4 py-2 rounded-lg font-bold text-sm">SALVA</button>
+                <button onclick="toggleForm()" class="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm">ANNULLA</button>
+            </div>
+        </div>
+
+        <div id="grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+    </div>
+
+    <script>
+        let SB_URL = "IL_TUO_URL";
+        let SB_KEY = "LA_TUA_KEY";
+        let PASS_OK = "milano";
+        
+        let client = supabase.createClient(SB_URL, SB_KEY);
+
+        async function inizializza() {
+            let p = prompt("Password:");
+            if (p && p.trim().toLowerCase() === PASS_OK) {
+                document.getElementById('app').classList.remove('hidden');
+                caricaDati();
+            } else { document.body.innerHTML = "Accesso negato"; }
+        }
+
+        async function caricaDati() {
+            let { data, error } = await client.from('patrimonio').select('*').order('isin');
+            if (error) return alert(error.message);
+
+            let container = document.getElementById('grid-container');
+            container.innerHTML = "";
+            let totaleGen = 0;
+
+            data.forEach(r => {
+                let rigaTotale = (r.prezzo || 0) * (r.quantita || 0);
+                totaleGen += rigaTotale;
+
+                let card = document.createElement('div');
+                card.className = "bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl card-enter relative group overflow-hidden";
+                card.innerHTML = `
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-emerald-400 font-mono text-sm font-bold tracking-widest">${r.isin}</span>
+                            <button onclick="elimina('${r.isin}')" class="text-slate-500 hover:text-red-400 transition-colors text-xs font-bold uppercase">Elimina</button>
+                        </div>
+                        <div class="mb-4">
+                            <p class="text-xs text-slate-500 uppercase">Valore Posizione</p>
+                            <h3 class="text-2xl font-black text-white">€ ${rigaTotale.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 text-sm bg-slate-900/50 p-3 rounded-xl">
+                            <div>
+                                <p class="text-slate-500 text-[10px] uppercase">Prezzo</p>
+                                <input type="number" step="0.01" value="${r.prezzo}" onchange="aggiornaPrezzo('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full outline-none focus:text-emerald-400">
+                            </div>
+                            <div>
+                                <p class="text-slate-500 text-[10px] uppercase">Quantità</p>
+                                <input type="number" value="${r.quantita || 0}" onchange="aggiornaQta('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full outline-none focus:text-emerald-400">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            document.getElementById('totale-display').innerText = `Totale: € ${totaleGen.toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+        }
+
+        // Funzioni CRUD senza Prompt
+        function toggleForm() { document.getElementById('form-aggiunta').classList.toggle('hidden'); }
+
+        async function salvaNuovo() {
+            let isin = document.getElementById('new-isin').value;
+            let qta = document.getElementById('new-qta').value;
+            let prezzo = document.getElementById('new-prezzo').value;
+
+            if (!isin) return alert("Inserisci ISIN");
+
+            let { error } = await client.from('patrimonio').insert([{ isin, quantita: parseFloat(qta), prezzo: parseFloat(prezzo) }]);
+            if (error) alert(error.message);
+            else { toggleForm(); caricaDati(); }
+        }
+
+        async function aggiornaPrezzo(isin, val) {
+            let { error } = await client.from('patrimonio').update({ prezzo: parseFloat(val) }).eq('isin', isin);
+            if (!error) caricaDati();
+        }
+
+        async function aggiornaQta(isin, val) {
+            let { error } = await client.from('patrimonio').update({ quantita: parseFloat(val) }).eq('isin', isin);
+            if (!error) caricaDati();
+        }
+
+        async function elimina(isin) {
+            if (confirm(`Eliminare ${isin}?`)) {
+                await client.from('patrimonio').delete().eq('isin', isin);
+                caricaDati();
+            }
+        }
+
+        window.onload = inizializza;
+    </script>
+</body>
+</html>
