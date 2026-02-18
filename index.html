@@ -77,7 +77,7 @@
             let totaleGen = 0;
 
             data.forEach(r => {
-                let rigaTotale = (r.prezzo || 0) * (r.quantita || 0);
+                let rigaTotale = (r.prezzo_unitario || 0) * (r.quantita || 0);
                 totaleGen += rigaTotale;
 
                 let card = document.createElement('div');
