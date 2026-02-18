@@ -1,107 +1,113 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+    <meta name="robots" content="noindex, nofollow">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex, nofollow">
     <title>Mio Patrimonio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-slate-900 text-white font-sans p-8">
-    <div class="max-w-4xl mx-auto">
+<body class="bg-[#0f172a] text-slate-200 font-sans p-8">
+
+    <div id="loading" class="text-center mt-20 text-xl font-bold">
+        Verifica accesso in corso...
+    </div>
+
+    <div id="content" class="max-w-5xl mx-auto hidden">
         <header class="mb-10 text-center">
             <h1 class="text-4xl font-bold text-emerald-400">📊 Portafoglio BTP</h1>
-            <p class="text-slate-400 mt-2">Aggiornato in tempo reale via GitHub Actions</p>
+            <p id="last-update" class="text-slate-400 mt-2">Dati aggiornati via GitHub Actions</p>
         </header>
 
-        <div id="loader" class="text-center">Caricamento dati...</div>
-        
-        <div id="dashboard" class="hidden">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
-                    <p class="text-sm text-slate-400 uppercase">Valore Totale</p>
-                    <h2 id="totale-valore" class="text-3xl font-bold">€ 0.00</h2>
-                </div>
-                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
-                    <p class="text-sm text-slate-400 uppercase">Guadagno Totale</p>
-                    <h2 id="totale-guadagno" class="text-3xl font-bold">€ 0.00</h2>
-                </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
+                <p class="text-xs text-slate-400 uppercase mb-1">Valore Totale</p>
+                <h2 id="totale-valore" class="text-3xl font-bold text-white">€ 0.00</h2>
             </div>
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
+                <p class="text-xs text-slate-400 uppercase mb-1">P&L Totale</p>
+                <h2 id="totale-guadagno" class="text-3xl font-bold text-white">€ 0.00</h2>
+            </div>
+        </div>
 
-            <table class="w-full text-left bg-slate-800 rounded-2xl overflow-hidden">
-                <thead class="bg-slate-700 text-slate-300">
+        <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
+            <table class="w-full text-left">
+                <thead class="bg-slate-700 text-slate-300 uppercase text-xs">
                     <tr>
                         <th class="p-4">ISIN</th>
-                        <th class="p-4">Prezzo</th>
-                        <th class="p-4">Quantità</th>
-                        <th class="p-4">Totale</th>
+                        <th class="p-4 text-right">Prezzo</th>
+                        <th class="p-4 text-right">Totale</th>
+                        <th class="p-4 text-right">P&L</th>
                     </tr>
                 </thead>
-                <tbody id="tabella-corpo"></tbody>
+                <tbody id="tabella-corpo" class="divide-y divide-slate-700"></tbody>
             </table>
         </div>
     </div>
 
     <script>
-        // Configura qui le tue credenziali PUBBLICHE (Anon Key)
+        // --- CONFIGURAZIONE ---
         const SB_URL = "https://xmwibmjbqcerxrkbepbh.supabase.co";
 
         const SB_KEY =  "sb_publishable_f5oxVaJVgTEtmCRfnjeSng_GSAb5NoO";
- 
-        const supabase = supabase.createClient(SB_URL, SB_KEY);
-        const password = prompt("Inserisci la password per visualizzare il patrimonio:");
-
+        const PASS_CORRETTA = "TUA_PASSWORD"; // Sostituisci con la tua password
+        // ----------------------
 
         const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
-        async function init() {
-            // Chiedi la password prima di mostrare qualsiasi cosa
-            const pass = prompt("Inserisci la password per accedere ai dati:");
+        async function avvia() {
+            const passUtente = prompt("Inserisci la password:");
             
-            if (pass === PASSWORD_ACCESSO) {
-                document.getElementById('content').classList.remove('hidden');
-                caricaDati();
-            } else {
-                alert("Password errata!");
-                document.body.innerHTML = "<div class='flex items-center justify-center h-screen text-red-500 font-bold'>ACCESSO NEGATO</div>";
+            if (passUtente !== PASS_CORRETTA) {
+                alert("Accesso negato.");
+                document.getElementById('loading').innerText = "ACCESSO NEGATO";
+                return;
+            }
+
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('content').classList.remove('hidden');
+            
+            try {
+                const { data, error } = await supabaseClient.from('patrimonio').select('*');
+                
+                if (error) throw error;
+
+                let html = "";
+                let tValore = 0;
+                let tCarico = 0;
+
+                data.forEach(r => {
+                    const valore = (r.prezzo || 0) * (r.quantita || 0);
+                    const carico = (r.prezzo_carico || 0) * (r.quantita || 0);
+                    const pnl = valore - carico;
+                    
+                    tValore += valore;
+                    tCarico += carico;
+
+                    html += `
+                        <tr class="hover:bg-slate-750">
+                            <td class="p-4 font-mono font-bold">${r.isin}</td>
+                            <td class="p-4 text-right">${r.prezzo.toFixed(2)}€</td>
+                            <td class="p-4 text-right font-bold">${valore.toFixed(2)}€</td>
+                            <td class="p-4 text-right ${pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}">
+                                ${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}€
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                document.getElementById('tabella-corpo').innerHTML = html;
+                document.getElementById('totale-valore').innerText = `€ ${tValore.toFixed(2)}`;
+                document.getElementById('totale-guadagno').innerText = `€ ${(tValore - tCarico).toFixed(2)}`;
+                document.getElementById('totale-guadagno').classList.add(tValore - tCarico >= 0 ? 'text-emerald-400' : 'text-red-400');
+            } catch (err) {
+                console.error(err);
+                alert("Errore nel caricamento dati. Controlla la console.");
             }
         }
 
-        
-       
-        
-        async function caricaDati() {
-            const { data, error } = await supabase.from('patrimonio').select('*');
-            if (error) return console.error(error);
-
-            let html = "";
-            let totaleInvestito = 0;
-            let totaleAttuale = 0;
-
-            data.forEach(r => {
-                const valore = r.prezzo * r.quantita;
-                totaleAttuale += valore;
-                totaleInvestito += (r.prezzo_carico * r.quantita);
-                
-                html += `
-                    <tr class="border-b border-slate-700 hover:bg-slate-750 transition">
-                        <td class="p-4 font-mono font-bold">${r.isin}</td>
-                        <td class="p-4">${r.prezzo}€</td>
-                        <td class="p-4">${r.quantita}</td>
-                        <td class="p-4 font-bold text-emerald-400">${valore.toFixed(2)}€</td>
-                    </tr>
-                `;
-            });
-
-            document.getElementById('tabella-corpo').innerHTML = html;
-            document.getElementById('totale-valore').innerText = `€ ${totaleAttuale.toFixed(2)}`;
-            document.getElementById('totale-guadagno').innerText = `€ ${(totaleAttuale - totaleInvestito).toFixed(2)}`;
-            document.getElementById('loader').classList.add('hidden');
-            document.getElementById('dashboard').classList.remove('hidden');
-        }
-
-        window.onload =init;
+        window.onload = avvia;
     </script>
 </body>
 </html>
