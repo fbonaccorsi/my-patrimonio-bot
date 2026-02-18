@@ -1,6 +1,117 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Patrimonio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-900 text-white p-10">
+
+    <h1 class="text-2xl mb-4 text-emerald-400 font-bold">Stato Sistema:</h1>
+    <div id="debug-log" class="bg-black p-4 font-mono text-sm border border-slate-700 rounded-lg mb-6">
+        Attendere...
+    </div>
+
+    <div id="dashboard" class="hidden">
+        <h2 class="text-xl mb-4">Dati Portafoglio:</h2>
+        <div id="tabella" class="space-y-2"></div>
+    </div>
+
+    <script>
+        const log = document.getElementById('debug-log');
+        
+        // Funzione per scrivere gli errori sullo schermo del tablet
+        function scrivi(msg) {
+            log.innerHTML += "<br>> " + msg;
+        }
+
+        async function esegui() {
+            try {
+                scrivi("Fase 1: Avvio script...");
+
+                // --- CONFIGURAZIONE ---
+                const SB_URL = "https://xmwibmjbqcerxrkbepbh.supabase.co";
+
+        const SB_KEY =  "sb_publishable_f5oxVaJVgTEtmCRfnjeSng_GSAb5NoO";
+                const MIA_PASS = "LA_TUA_PASS_QUI";
+                // ----------------------
+
+                scrivi("Fase 2: Controllo credenziali...");
+                if(SB_URL.includes("URL_QUI")) {
+                    scrivi("ERRORE: Non hai sostituito l'URL di Supabase!");
+                    return;
+                }
+
+                const pass = prompt("Inserisci la password:");
+                if (pass !== MIA_PASS) {
+                    scrivi("ERRORE: Password errata.");
+                    return;
+                }
+                scrivi("Fase 3: Password OK. Connessione a Supabase...");
+
+                const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+                
+                const { data, error } = await supabaseClient.from('patrimonio').select('*');
+
+                if (error) {
+                    scrivi("ERRORE SUPABASE: " + error.message);
+                    return;
+                }
+
+                scrivi("Fase 4: Dati ricevuti! Totale righe: " + data.length);
+                
+                document.getElementById('dashboard').classList.remove('hidden');
+                let lista = "";
+                data.forEach(r => {
+                    lista += `<div class='p-2 bg-slate-800 rounded'>${r.isin}: ${r.prezzo}€</div>`;
+                });
+                document.getElementById('tabella').innerHTML = lista;
+                scrivi("Fase 5: Operazione completata con successo.");
+
+            } catch (err) {
+                scrivi("ERRORE CRITICO: " + err.message);
+            }
+        }
+
+        // Lanciamo l'esecuzione
+        esegui();
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
     <meta name="robots" content="noindex, nofollow">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
