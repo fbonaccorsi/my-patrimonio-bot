@@ -1,6 +1,7 @@
 import os
 import requests
 from bs4 import BeautifulSoup
+import time
 
 # Configurazione credenziali dai Secrets di GitHub
 SUPABASE_URL = os.getenv("SUPABASE_URL")
