@@ -38,6 +38,10 @@
                 const MIA_PASS = "1234";
                 // ----------------------
 
+
+// Pulizia: toglie spazi e rende minuscolo
+        
+
                 scrivi("Fase 2: Controllo credenziali...");
                 if(SB_URL.includes("URL_QUI")) {
                     scrivi("ERRORE: Non hai sostituito l'URL di Supabase!");
@@ -45,6 +49,14 @@
                 }
 
                 const pass = prompt("Inserisci la password:");
+
+             pass = pass.trim().toLowerCase();
+
+        scrivi("Hai inserito: [" + pass + "]"); // Vediamo cosa ha letto il tablet
+
+        
+
+                
                 if (pass !== MIA_PASS) {
                     scrivi("ERRORE: Password errata.");
                     return;
