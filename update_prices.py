@@ -38,7 +38,7 @@ def update_supabase(isin, price):
         "Content-Type": "application/json",
         "Prefer": "return=minimal"
     }
-    data = {"prezzo": price}
+    data = {"prezzo_unitario": price}
     
     response = requests.patch(url, headers=headers, json=data)
     if response.status_code in [200, 204]:
