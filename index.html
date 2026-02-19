@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="robots" content="noindex, nofollow">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patrimonio Pro</title>
+    <title>Patrimonio Pro - MultiUser</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -13,7 +13,16 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .bg-glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); }
+        /* Color Safe-list per Tailwind dinamico */
+        .border-blue-500\/50 { border-color: rgba(59, 130, 246, 0.5); }
+        .border-emerald-500\/50 { border-color: rgba(16, 185, 129, 0.5); }
+        .border-purple-500\/50 { border-color: rgba(168, 85, 247, 0.5); }
+        .text-blue-400 { color: #60a5fa; }
+        .text-emerald-400 { color: #34d399; }
+        .text-purple-400 { color: #c084fc; }
+        .bg-blue-500\/10 { background-color: rgba(59, 130, 246, 0.1); }
+        .bg-emerald-500\/10 { background-color: rgba(16, 185, 129, 0.1); }
+        .bg-purple-500\/10 { background-color: rgba(168, 85, 247, 0.1); }
     </style>
 </head>
 <body class="bg-[#0f172a] text-slate-200 p-4 md:p-8 font-sans">
@@ -22,185 +31,162 @@
         <header class="mb-10 flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-800/40 p-6 rounded-3xl border border-slate-700/50">
             <div>
                 <h1 class="text-3xl font-black text-white tracking-tight">💰 PATRIMONIO GESTITO</h1>
-                <div id="totale-display" class="mt-2 text-emerald-400 font-mono text-2xl font-bold">Calcolo in corso...</div>
+                <div id="totale-display" class="mt-2 text-2xl font-bold">Calcolo in corso...</div>
+                <div id="riepilogo-titolari" class="mt-3 flex gap-4 text-[10px] uppercase font-bold tracking-widest">
+                    </div>
             </div>
-            <div class="flex gap-3">
-                <button onclick="toggleForm()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20">
-                    + ASSET
-                </button>
-            </div>
+            <button onclick="toggleForm()" class="bg-white hover:bg-slate-200 text-slate-900 px-6 py-3 rounded-xl font-bold transition-all shadow-lg">
+                + AGGIUNGI ASSET
+            </button>
         </header>
 
-        <div id="form-aggiunta" class="hidden mb-10 bg-slate-800 p-6 rounded-2xl border border-emerald-500/30 card-enter shadow-2xl">
-            <h2 class="text-lg font-bold mb-4 text-emerald-400">Nuovo Titolo (BTP/Asset)</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input type="text" id="new-isin" placeholder="ISIN (es. IT000...)" class="bg-slate-900 border border-slate-700 p-3 rounded-lg focus:outline-none focus:border-emerald-500 text-white">
-                <input type="number" id="new-qta" placeholder="Quantità" class="bg-slate-900 border border-slate-700 p-3 rounded-lg focus:outline-none focus:border-emerald-500 text-white">
-                <input type="number" step="0.01" id="new-prezzo" placeholder="Prezzo" class="bg-slate-900 border border-slate-700 p-3 rounded-lg focus:outline-none focus:border-emerald-500 text-white">
+        <div id="form-aggiunta" class="hidden mb-10 bg-slate-800 p-6 rounded-2xl border border-slate-700 card-enter shadow-2xl">
+            <h2 class="text-lg font-bold mb-4">Nuovo Titolo in Portafoglio</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <input type="text" id="new-isin" placeholder="ISIN (es. IT000...)" class="bg-slate-900 border border-slate-700 p-3 rounded-lg focus:outline-none focus:border-blue-500 text-white">
+                <input type="number" id="new-qta" placeholder="Quantità" class="bg-slate-900 border border-slate-700 p-3 rounded-lg focus:outline-none focus:border-blue-500 text-white">
+                <input type="number" step="0.01" id="new-prezzo" placeholder="Prezzo" class="bg-slate-900 border border-slate-700 p-3 rounded-lg focus:outline-none focus:border-blue-500 text-white">
+                <select id="new-titolare" class="bg-slate-900 border border-slate-700 p-3 rounded-lg focus:outline-none focus:border-blue-500 text-white uppercase">
+                    <option value="CLARA">CLARA</option>
+                    <option value="FEDERICO">FEDERICO</option>
+                    <option value="ANTONELLA">ANTONELLA</option>
+                </select>
             </div>
             <div class="mt-4 flex gap-2">
-                <button onclick="salvaNuovo()" class="bg-emerald-500 text-slate-900 px-4 py-2 rounded-lg font-bold text-sm">SALVA</button>
-                <button onclick="toggleForm()" class="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm">ANNULLA</button>
+                <button onclick="salvaNuovo()" class="bg-blue-500 text-white px-6 py-2 rounded-lg font-bold text-sm">SALVA</button>
+                <button onclick="toggleForm()" class="bg-slate-700 text-white px-6 py-2 rounded-lg text-sm">ANNULLA</button>
             </div>
         </div>
 
         <section class="mb-12">
-            <h2 class="text-xl font-bold text-slate-400 mb-6 flex items-center gap-2 uppercase tracking-widest">
-                <span class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">📈</span> Titoli in Portafoglio
+            <h2 class="text-sm font-black text-slate-500 mb-6 uppercase tracking-[0.2em] flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-blue-500"></span> Titoli e BTP
             </h2>
-            <div id="grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                </div>
+            <div id="grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </section>
 
         <section class="mb-12 border-t border-slate-800 pt-10">
-            <h2 class="text-xl font-bold text-slate-400 mb-6 flex items-center gap-2 uppercase tracking-widest">
-                <span class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">🏦</span> Liquidità e Conti
+            <h2 class="text-sm font-black text-slate-500 mb-6 uppercase tracking-[0.2em] flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Liquidità e Conti Correnti
             </h2>
-            <div id="conti-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                </div>
+            <div id="conti-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </section>
     </div>
 
     <script>
-        // CONFIGURAZIONE SUPABASE
         const SB_URL = "https://xmwibmjbqcerxrkbepbh.supabase.co";
         const SB_KEY = "sb_publishable_f5oxVaJVgTEtmCRfnjeSng_GSAb5NoO";
         const PASS_OK = "milano";
         
-        let client = supabase.createClient(SB_URL, SB_KEY);
+        const client = supabase.createClient(SB_URL, SB_KEY);
+
+        function getColore(titolare) {
+            const m = { 'CLARA': 'blue', 'FEDERICO': 'emerald', 'ANTONELLA': 'purple' };
+            return m[titolare?.toUpperCase()] || 'slate';
+        }
 
         async function inizializza() {
-            let p = prompt("Password di accesso:");
+            let p = prompt("Password:");
             if (p && p.trim().toLowerCase() === PASS_OK) {
                 document.getElementById('app').classList.remove('hidden');
                 caricaDati();
-            } else { 
-                document.body.innerHTML = `
-                    <div class="h-screen flex items-center justify-center flex-col gap-4">
-                        <p class="text-red-400 font-bold text-xl">Accesso Negato</p>
-                        <button onclick="location.reload()" class="text-slate-500 underline">Riprova</button>
-                    </div>`; 
-            }
+            } else { document.body.innerHTML = "Accesso negato"; }
         }
 
         async function caricaDati() {
-            // Fetch parallelo di entrambe le tabelle
-            const [resPatrimonio, resConti] = await Promise.all([
+            const [resP, resC] = await Promise.all([
                 client.from('patrimonio').select('*').order('isin'),
                 client.from('conticorrenti').select('*').order('titolare')
             ]);
 
-            if (resPatrimonio.error || resConti.error) {
-                return alert("Errore nel recupero dei dati.");
-            }
-
-            let containerTitoli = document.getElementById('grid-container');
-            let containerConti = document.getElementById('conti-container');
-            containerTitoli.innerHTML = "";
-            containerConti.innerHTML = "";
+            const containerTitoli = document.getElementById('grid-container');
+            const containerConti = document.getElementById('conti-container');
+            containerTitoli.innerHTML = ""; containerConti.innerHTML = "";
             
-            let totaleTitoli = 0;
-            let totaleLiquidita = 0;
+            let totP = 0, totC = 0;
+            let perUser = { 'CLARA': 0, 'FEDERICO': 0, 'ANTONELLA': 0 };
 
             // RENDER TITOLI
-            resPatrimonio.data.forEach(r => {
-                let rigaTotale = (r.prezzo_unitario || 0) * (r.quantita || 0);
-                totaleTitoli += rigaTotale;
+            resP.data?.forEach(r => {
+                const val = (r.prezzo_unitario || 0) * (r.quantita || 0);
+                totP += val;
+                perUser[r.titolare] += val;
+                const col = getColore(r.titolare);
 
-                let card = document.createElement('div');
-                card.className = "bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl card-enter hover:border-blue-500/50 transition-colors";
-                card.innerHTML = `
-                    <div class="flex justify-between items-start mb-4">
-                        <span class="text-blue-400 font-mono text-sm font-bold tracking-widest">${r.isin}</span>
-                        <button onclick="elimina('${r.isin}')" class="text-slate-500 hover:text-red-400 text-[10px] uppercase font-bold">Elimina</button>
-                    </div>
-                    <div class="mb-4">
-                        <p class="text-[10px] text-slate-500 uppercase">Valore Mercato</p>
-                        <h3 class="text-2xl font-black text-white">€ ${rigaTotale.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4 text-sm bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
-                        <div>
-                            <p class="text-slate-500 text-[9px] uppercase">Prezzo Unit.</p>
-                            <input type="number" step="0.01" value="${r.prezzo_unitario}" onchange="aggiornaPrezzo('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full outline-none focus:text-blue-400">
+                containerTitoli.innerHTML += `
+                    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 card-enter hover:border-${col}-500/50 transition-all">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="px-2 py-1 bg-${col}-500/10 text-${col}-400 text-[9px] font-black rounded border border-${col}-500/20 uppercase">${r.titolare}</span>
+                            <button onclick="elimina('${r.isin}')" class="text-slate-600 hover:text-red-400 text-[10px] font-bold">ELIMINA</button>
                         </div>
-                        <div>
-                            <p class="text-slate-500 text-[9px] uppercase">Q.tà</p>
-                            <input type="number" value="${r.quantita || 0}" onchange="aggiornaQta('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full outline-none focus:text-blue-400">
+                        <p class="text-slate-500 text-[10px] uppercase font-bold tracking-widest">${r.isin}</p>
+                        <h3 class="text-2xl font-black text-white mt-1">€ ${val.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3>
+                        <div class="grid grid-cols-2 gap-4 mt-4 bg-slate-900/50 p-3 rounded-xl border border-slate-700/30">
+                            <div>
+                                <p class="text-slate-500 text-[9px] uppercase">Prezzo</p>
+                                <input type="number" step="0.01" value="${r.prezzo_unitario}" onchange="aggiornaP('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full outline-none focus:text-${col}-400">
+                            </div>
+                            <div>
+                                <p class="text-slate-500 text-[9px] uppercase">Q.tà</p>
+                                <input type="number" value="${r.quantita}" onchange="aggiornaQ('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full outline-none focus:text-${col}-400">
+                            </div>
                         </div>
-                    </div>
-                `;
-                containerTitoli.appendChild(card);
+                    </div>`;
             });
 
-            // RENDER CONTI CORRENTI
-            resConti.data.forEach(c => {
-                totaleLiquidita += (c.saldo || 0);
+            // RENDER CONTI
+            resC.data?.forEach(c => {
+                totC += (c.saldo || 0);
+                perUser[c.titolare] += (c.saldo || 0);
+                const col = getColore(c.titolare);
 
-                let cardConto = document.createElement('div');
-                cardConto.className = "bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 card-enter hover:border-emerald-500/50 transition-all";
-                cardConto.innerHTML = `
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded uppercase border border-emerald-500/20">${c.titolare}</span>
-                        <span class="text-xs text-slate-500 font-medium">${c.istituto}</span>
-                    </div>
-                    <div class="mb-3">
-                        <p class="text-[10px] text-slate-500 uppercase">Saldo Attuale</p>
+                containerConti.innerHTML += `
+                    <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 card-enter hover:border-${col}-500/50 transition-all">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="px-2 py-1 bg-${col}-500/10 text-${col}-400 text-[9px] font-black rounded border border-${col}-500/20 uppercase">${c.titolare}</span>
+                            <span class="text-[10px] text-slate-500 font-bold uppercase">${c.istituto}</span>
+                        </div>
                         <h3 class="text-xl font-bold text-white">€ ${c.saldo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3>
                         <p class="text-[9px] text-slate-600 font-mono truncate mt-1">${c.iban || ''}</p>
-                    </div>
-                    <div class="flex justify-end border-t border-slate-700/50 pt-3">
-                        <button onclick="aggiornaSaldoPrompt('${c.id}', ${c.saldo})" class="text-emerald-500 hover:text-emerald-400 text-[10px] font-bold uppercase tracking-wider">Modifica Saldo</button>
-                    </div>
-                `;
-                containerConti.appendChild(cardConto);
+                        <div class="flex justify-end mt-4 pt-3 border-t border-slate-700/50">
+                            <button onclick="aggiornaS('${c.id}', ${c.saldo})" class="text-${col}-400 hover:brightness-125 text-[10px] font-black uppercase tracking-tighter">Aggiorna Saldo</button>
+                        </div>
+                    </div>`;
             });
 
-            // AGGIORNAMENTO TOTALI
-            let totaleGlobale = totaleTitoli + totaleLiquidita;
+            // UPDATE TOTALI
             document.getElementById('totale-display').innerHTML = `
-                <div class="text-emerald-400">€ ${totaleGlobale.toLocaleString('it-IT', {minimumFractionDigits: 2})}</div>
-                <div class="text-[11px] text-slate-500 font-normal uppercase mt-1 tracking-wider">
-                    Titoli: €${totaleTitoli.toLocaleString('it-IT')} | Liquidità: €${totaleLiquidita.toLocaleString('it-IT')}
-                </div>
-            `;
+                <span class="text-emerald-400">€ ${(totP + totC).toLocaleString('it-IT', {minimumFractionDigits: 2})}</span>
+                <span class="text-slate-500 text-xs font-normal ml-2"> (Titoli: €${totP.toLocaleString()} | Conti: €${totC.toLocaleString()})</span>`;
+
+            let riepilogo = "";
+            for (let user in perUser) {
+                const col = getColore(user);
+                riepilogo += `<span class="text-${col}-400">${user}: €${perUser[user].toLocaleString()}</span>`;
+            }
+            document.getElementById('riepilogo-titolari').innerHTML = riepilogo;
         }
 
-        // FUNZIONI TITOLI
         function toggleForm() { document.getElementById('form-aggiunta').classList.toggle('hidden'); }
 
         async function salvaNuovo() {
-            let isin = document.getElementById('new-isin').value;
-            let qta = document.getElementById('new-qta').value;
-            let prezzo_unitario = document.getElementById('new-prezzo').value;
-            if (!isin) return alert("Inserisci ISIN");
-            let { error } = await client.from('patrimonio').insert([{ isin, quantita: parseFloat(qta), prezzo_unitario: parseFloat(prezzo_unitario) }]);
-            if (error) alert(error.message);
-            else { toggleForm(); caricaDati(); }
+            const isin = document.getElementById('new-isin').value;
+            const qta = parseFloat(document.getElementById('new-qta').value);
+            const pr = parseFloat(document.getElementById('new-prezzo').value);
+            const tit = document.getElementById('new-titolare').value;
+            if (!isin) return alert("Manca ISIN");
+            await client.from('patrimonio').insert([{ isin, quantita: qta, prezzo_unitario: pr, titolare: tit }]);
+            toggleForm(); caricaDati();
         }
 
-        async function aggiornaPrezzo(isin, val) {
-            await client.from('patrimonio').update({ prezzo_unitario: parseFloat(val) }).eq('isin', isin);
-            caricaDati();
-        }
+        async function aggiornaP(isin, v) { await client.from('patrimonio').update({ prezzo_unitario: parseFloat(v) }).eq('isin', isin); caricaDati(); }
+        async function aggiornaQ(isin, v) { await client.from('patrimonio').update({ quantita: parseFloat(v) }).eq('isin', isin); caricaDati(); }
+        async function elimina(isin) { if(confirm("Eliminare?")) { await client.from('patrimonio').delete().eq('isin', isin); caricaDati(); } }
 
-        async function aggiornaQta(isin, val) {
-            await client.from('patrimonio').update({ quantita: parseFloat(val) }).eq('isin', isin);
-            caricaDati();
-        }
-
-        async function elimina(isin) {
-            if (confirm(`Eliminare ${isin}?`)) {
-                await client.from('patrimonio').delete().eq('isin', isin);
-                caricaDati();
-            }
-        }
-
-        // FUNZIONI CONTI
-        async function aggiornaSaldoPrompt(id, saldoAttuale) {
-            let nuovo = prompt("Inserisci il nuovo saldo per questo conto:", saldoAttuale);
-            if (nuovo !== null && nuovo !== "") {
-                let { error } = await client.from('conticorrenti').update({ saldo: parseFloat(nuovo.replace(',', '.')) }).eq('id', id);
-                if (error) alert("Errore durante l'aggiornamento.");
+        async function aggiornaS(id, attuale) {
+            let n = prompt("Nuovo saldo:", attuale);
+            if (n) {
+                await client.from('conticorrenti').update({ saldo: parseFloat(n.replace(',', '.')) }).eq('id', id);
                 caricaDati();
             }
         }
