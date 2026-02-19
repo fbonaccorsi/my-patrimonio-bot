@@ -178,4 +178,34 @@
             else { toggleForm(); caricaDati(); }
         }
 
-        async
+        async function aggiornaPrezzo(isin, val) {
+            await client.from('patrimonio').update({ prezzo_unitario: parseFloat(val) }).eq('isin', isin);
+            caricaDati();
+        }
+
+        async function aggiornaQta(isin, val) {
+            await client.from('patrimonio').update({ quantita: parseFloat(val) }).eq('isin', isin);
+            caricaDati();
+        }
+
+        async function elimina(isin) {
+            if (confirm(`Eliminare ${isin}?`)) {
+                await client.from('patrimonio').delete().eq('isin', isin);
+                caricaDati();
+            }
+        }
+
+        // FUNZIONI CONTI
+        async function aggiornaSaldoPrompt(id, saldoAttuale) {
+            let nuovo = prompt("Inserisci il nuovo saldo per questo conto:", saldoAttuale);
+            if (nuovo !== null && nuovo !== "") {
+                let { error } = await client.from('conticorrenti').update({ saldo: parseFloat(nuovo.replace(',', '.')) }).eq('id', id);
+                if (error) alert("Errore durante l'aggiornamento.");
+                caricaDati();
+            }
+        }
+
+        window.onload = inizializza;
+    </script>
+</body>
+</html>
