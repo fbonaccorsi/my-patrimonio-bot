@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="robots" content="noindex, nofollow">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patrimonio Pro - MultiUser</title>
+    <title>Patrimonio Pro - Portfolio Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -13,7 +13,6 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        /* Classi di supporto per Tailwind dinamico */
         .text-blue-400 { color: #60a5fa; } .text-emerald-400 { color: #34d399; } .text-purple-400 { color: #c084fc; }
         .bg-blue-500\/10 { background-color: rgba(59, 130, 246, 0.1); } 
         .bg-emerald-500\/10 { background-color: rgba(16, 185, 129, 0.1); } 
@@ -25,9 +24,9 @@
     <div id="app" class="max-w-6xl mx-auto hidden">
         <header class="mb-10 flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-800/40 p-6 rounded-3xl border border-slate-700/50">
             <div>
-                <h1 class="text-3xl font-black text-white tracking-tight italic">💰 PATRIMONIO GESTITO</h1>
+                <h1 class="text-3xl font-black text-white tracking-tight italic uppercase">💰 Patrimonio</h1>
                 <div id="totale-display" class="mt-2 text-3xl font-bold tracking-tighter">Calcolo in corso...</div>
-                <div id="riepilogo-titolari" class="mt-3 flex flex-wrap gap-4 text-[10px] uppercase font-black tracking-widest"></div>
+                <div id="riepilogo-titolari" class="mt-3 flex flex-wrap gap-3 text-[10px] uppercase font-black tracking-widest"></div>
             </div>
             <button onclick="toggleForm()" class="bg-white hover:bg-slate-200 text-slate-900 px-8 py-4 rounded-2xl font-black transition-all shadow-xl active:scale-95">
                 + AGGIUNGI ASSET
@@ -37,37 +36,29 @@
         <div id="form-aggiunta" class="hidden mb-10 bg-slate-800 p-8 rounded-3xl border border-slate-700 card-enter shadow-2xl">
             <h2 class="text-xl font-bold mb-6 text-blue-400">Nuovo Titolo</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="flex flex-col gap-2">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Nome Asset</label>
-                    <input type="text" id="new-nome" placeholder="es. BTP VALORE MAG 27" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none focus:border-blue-500">
-                </div>
-                <div class="flex flex-col gap-2">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Codice ISIN</label>
-                    <input type="text" id="new-isin" placeholder="IT000..." class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white font-mono uppercase outline-none focus:border-blue-500">
-                </div>
-                <div class="flex flex-col gap-2">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Titolare</label>
-                    <select id="new-titolare" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none focus:border-blue-500">
-                        <option value="CLARA">CLARA</option>
-                        <option value="FEDERICO">FEDERICO</option>
-                        <option value="ANTONELLA">ANTONELLA</option>
-                    </select>
-                </div>
+                <input type="text" id="new-nome" placeholder="Nome Asset (es. BTP MAG 27)" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
+                <input type="text" id="new-isin" placeholder="Codice ISIN" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white font-mono uppercase outline-none">
+                <select id="new-titolare" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
+                    <option value="CLARA">CLARA</option>
+                    <option value="FEDERICO">FEDERICO</option>
+                    <option value="ANTONELLA">ANTONELLA</option>
+                </select>
+                <input type="number" step="0.01" id="new-carico" placeholder="Prezzo di Carico (es. 100)" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
+                <input type="number" step="0.01" id="new-prezzo" placeholder="Prezzo Attuale" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
                 <input type="number" id="new-qta" placeholder="Quantità" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
-                <input type="number" step="0.01" id="new-prezzo" placeholder="Prezzo attuale" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
             </div>
             <div class="mt-8 flex gap-3">
-                <button onclick="salvaNuovo()" class="bg-blue-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-400 transition-colors">SALVA NEL DATABASE</button>
+                <button onclick="salvaNuovo()" class="bg-blue-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-400">SALVA TITOLO</button>
                 <button onclick="toggleForm()" class="bg-slate-700 text-white px-8 py-3 rounded-xl font-bold">ANNULLA</button>
             </div>
         </div>
 
         <div id="grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16"></div>
         
-        <div class="mb-6 flex items-center gap-4">
-            <div class="h-[1px] bg-slate-800 flex-grow"></div>
-            <span class="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Liquidità Disponibile</span>
-            <div class="h-[1px] bg-slate-800 flex-grow"></div>
+        <div class="mb-8 flex items-center gap-4 opacity-50">
+            <div class="h-[1px] bg-slate-700 flex-grow"></div>
+            <span class="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">Liquidità Disponibile</span>
+            <div class="h-[1px] bg-slate-700 flex-grow"></div>
         </div>
         
         <div id="conti-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20"></div>
@@ -81,7 +72,7 @@
         function getCol(t) { return {'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[t] || 'slate'; }
 
         function formatData(iso) {
-            if(!iso) return "Mai";
+            if(!iso) return "N/D";
             const d = new Date(iso);
             return d.toLocaleDateString('it-IT', {day:'2-digit', month:'short'}) + " " + d.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
         }
@@ -91,7 +82,7 @@
             if (p?.toLowerCase() === "milano") {
                 document.getElementById('app').classList.remove('hidden');
                 caricaDati();
-            } else { document.body.innerHTML = "<div class='text-center mt-20 text-red-500 font-bold'>Password errata.</div>"; }
+            } else { document.body.innerHTML = "<div class='text-center mt-20 text-red-500 font-bold uppercase tracking-widest'>Accesso Negato</div>"; }
         }
 
         async function caricaDati() {
@@ -107,32 +98,49 @@
 
             // RENDER TITOLI
             resP.data?.forEach(r => {
-                const val = (r.prezzo_unitario || 0) * (r.quantita || 0);
-                totP += val; perU[r.titolare] += val;
+                const valAttuale = (r.prezzo_unitario || 0) * (r.quantita || 0);
+                const prezzoCarico = r.prezzo_di_carico || 100;
+                const performance = ((r.prezzo_unitario - prezzoCarico) / prezzoCarico) * 100;
+                const gainEuro = (r.prezzo_unitario - prezzoCarico) * r.quantita;
+                
+                const colPerf = performance >= 0 ? 'emerald' : 'red';
+                const segno = performance >= 0 ? '+' : '';
+                
+                totP += valAttuale; perU[r.titolare] += valAttuale;
                 const col = getCol(r.titolare);
 
                 cT.innerHTML += `
-                    <div class="bg-slate-800 border-l-4 border-${col}-500 rounded-2xl p-6 shadow-2xl card-enter relative overflow-hidden group">
-                        <div class="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onclick="elimina('${r.isin}')" class="text-slate-600 hover:text-red-500 text-[10px] font-bold">ELIMINA</button>
+                    <div class="bg-slate-800 border-l-4 border-${col}-500 rounded-2xl p-6 shadow-2xl card-enter relative group">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex flex-col gap-1">
+                                <span class="px-2 py-0.5 bg-${col}-500/10 text-${col}-400 text-[9px] font-black rounded border border-${col}-500/20 uppercase w-fit">${r.titolare}</span>
+                                <h3 class="text-white font-black text-lg uppercase leading-tight mt-1">${r.nome_asset || 'Asset'}</h3>
+                            </div>
+                            <div class="text-right">
+                                <span class="block text-${colPerf}-400 text-xs font-black bg-slate-900/80 px-2 py-1 rounded-lg border border-${colPerf}-500/20">
+                                    ${segno}${performance.toFixed(2)}%
+                                </span>
+                                <span class="text-[9px] text-slate-500 font-bold">${segno}${gainEuro.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>
+                            </div>
                         </div>
-                        <div class="flex flex-col gap-1 mb-4">
-                            <span class="px-2 py-0.5 bg-${col}-500/10 text-${col}-400 text-[9px] font-black rounded border border-${col}-500/20 uppercase w-fit">${r.titolare}</span>
-                            <h3 class="text-white font-black text-lg leading-tight uppercase mt-1">${r.nome_asset || 'Asset Senza Nome'}</h3>
-                            <p class="text-slate-500 text-[10px] font-mono tracking-widest">${r.isin}</p>
-                        </div>
+
                         <div class="mb-4">
-                            <p class="text-[9px] text-slate-500 uppercase font-bold">Controvalore attuale</p>
-                            <h3 class="text-3xl font-black text-white">€ ${val.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3>
+                            <p class="text-[9px] text-slate-500 uppercase font-black tracking-tighter">Valore di Mercato</p>
+                            <h3 class="text-3xl font-black text-white">€ ${valAttuale.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3>
                         </div>
-                        <div class="grid grid-cols-2 gap-4 bg-slate-900/40 p-3 rounded-xl border border-slate-700/30">
-                            <div><p class="text-slate-500 text-[8px] uppercase font-black">Prezzo</p>
-                                <input type="number" step="0.01" value="${r.prezzo_unitario}" onchange="aggP('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full outline-none focus:text-${col}-400"></div>
-                            <div><p class="text-slate-500 text-[8px] uppercase font-black">Quantità</p>
-                                <input type="number" value="${r.quantita}" onchange="aggQ('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full outline-none focus:text-${col}-400"></div>
+
+                        <div class="grid grid-cols-3 gap-2 bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
+                            <div><p class="text-slate-500 text-[7px] uppercase font-black">Carico</p>
+                                <input type="number" step="0.01" value="${prezzoCarico}" onchange="aggCarico('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full outline-none text-xs focus:text-blue-400"></div>
+                            <div><p class="text-slate-500 text-[7px] uppercase font-black">Attuale</p>
+                                <input type="number" step="0.01" value="${r.prezzo_unitario}" onchange="aggP('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full outline-none text-xs focus:text-blue-400"></div>
+                            <div><p class="text-slate-500 text-[7px] uppercase font-black">Quantità</p>
+                                <input type="number" value="${r.quantita}" onchange="aggQ('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full outline-none text-xs focus:text-blue-400"></div>
                         </div>
-                        <div class="mt-4 flex justify-between items-center opacity-60">
-                            <span class="text-[8px] text-slate-400 uppercase font-bold tracking-tighter italic">Ultimo Agg: ${formatData(r.ultimo_aggiornamento)}</span>
+
+                        <div class="mt-4 flex justify-between items-center border-t border-slate-700/30 pt-3">
+                            <span class="text-[8px] text-slate-500 uppercase font-bold tracking-tighter italic">Agg: ${formatData(r.ultimo_aggiornamento)}</span>
+                            <button onclick="elimina('${r.isin}')" class="text-slate-600 hover:text-red-500 text-[9px] font-black uppercase">Elimina</button>
                         </div>
                     </div>`;
             });
@@ -142,16 +150,16 @@
                 totC += (c.saldo || 0); perU[c.titolare] += (c.saldo || 0);
                 const col = getCol(c.titolare);
                 cC.innerHTML += `
-                    <div class="bg-slate-800/40 border-l-4 border-${col}-500/30 rounded-2xl p-6 card-enter">
+                    <div class="bg-slate-800/40 border-l-4 border-${col}-500/30 rounded-2xl p-6 shadow-lg card-enter">
                         <div class="flex justify-between items-center mb-4">
-                            <span class="px-2 py-0.5 bg-${col}-500/10 text-${col}-400 text-[9px] font-black rounded uppercase border border-${col}-500/20">${c.titolare}</span>
+                            <span class="px-2 py-0.5 bg-${col}-500/10 text-${col}-400 text-[9px] font-black rounded border border-${col}-500/20 uppercase">${c.titolare}</span>
                             <span class="text-[9px] text-slate-500 font-black uppercase tracking-widest">${c.istituto}</span>
                         </div>
-                        <p class="text-[9px] text-slate-500 uppercase font-bold">Saldo Disponibile</p>
+                        <p class="text-[9px] text-slate-500 uppercase font-bold">Saldo Liquido</p>
                         <h3 class="text-2xl font-black text-white">€ ${c.saldo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3>
                         <div class="flex justify-between items-center mt-6 pt-3 border-t border-slate-700/30">
-                            <span class="text-[8px] text-slate-500 uppercase italic font-bold">Agg: ${formatData(c.ultimo_aggiornamento)}</span>
-                            <button onclick="aggS('${c.id}', ${c.saldo})" class="text-${col}-400 text-[10px] font-black uppercase bg-${col}-500/5 px-3 py-1 rounded-lg border border-${col}-500/10">Aggiorna</button>
+                            <span class="text-[8px] text-slate-500 uppercase font-bold">Agg: ${formatData(c.ultimo_aggiornamento)}</span>
+                            <button onclick="aggS('${c.id}', ${c.saldo})" class="text-${col}-400 text-[10px] font-black uppercase bg-${col}-500/5 px-3 py-1 rounded-lg border border-${col}-500/10">Modifica</button>
                         </div>
                     </div>`;
             });
@@ -159,12 +167,16 @@
             const totaleGlobale = totP + totC;
             document.getElementById('totale-display').innerHTML = `
                 <span class="text-emerald-400">€ ${totaleGlobale.toLocaleString('it-IT', {minimumFractionDigits: 2})}</span>
-                <span class="text-slate-500 text-sm font-medium ml-3">/ Totale Patrimonio</span>`;
+                <span class="text-slate-500 text-sm font-medium ml-3">/ Totale Portafoglio</span>`;
 
             let rip = "";
             for (let u in perU) { 
                 const col = getCol(u);
-                rip += `<div class="bg-slate-900 px-3 py-1 rounded-full border border-slate-700"><span class="text-${col}-400">${u}:</span> <span class="text-white">€${perU[u].toLocaleString()}</span></div>`; 
+                rip += `<div class="bg-slate-900 px-3 py-1 rounded-full border border-slate-700 flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-${col}-500"></span>
+                            <span class="text-${col}-400">${u}:</span> 
+                            <span class="text-white font-mono">€${perU[u].toLocaleString('it-IT')}</span>
+                        </div>`; 
             }
             document.getElementById('riepilogo-titolari').innerHTML = rip;
         }
@@ -174,19 +186,21 @@
             const nome = document.getElementById('new-nome').value;
             const qta = parseFloat(document.getElementById('new-qta').value);
             const pr = parseFloat(document.getElementById('new-prezzo').value);
+            const car = parseFloat(document.getElementById('new-carico').value) || 100;
             const tit = document.getElementById('new-titolare').value;
-            if(!isin || !nome) return alert("Inserisci Nome e ISIN!");
-            await client.from('patrimonio').insert([{ isin, nome_asset: nome, quantita: qta, prezzo_unitario: pr, titolare: tit, ultimo_aggiornamento: new Date().toISOString() }]);
+            if(!isin || !nome) return alert("Dati mancanti!");
+            await client.from('patrimonio').insert([{ isin, nome_asset: nome, quantita: qta, prezzo_unitario: pr, prezzo_di_carico: car, titolare: tit, ultimo_aggiornamento: new Date().toISOString() }]);
             toggleForm(); caricaDati();
         }
 
         async function aggP(isin, v) { await client.from('patrimonio').update({ prezzo_unitario: parseFloat(v), ultimo_aggiornamento: new Date().toISOString() }).eq('isin', isin); caricaDati(); }
         async function aggQ(isin, v) { await client.from('patrimonio').update({ quantita: parseFloat(v), ultimo_aggiornamento: new Date().toISOString() }).eq('isin', isin); caricaDati(); }
+        async function aggCarico(isin, v) { await client.from('patrimonio').update({ prezzo_di_carico: parseFloat(v), ultimo_aggiornamento: new Date().toISOString() }).eq('isin', isin); caricaDati(); }
         async function aggS(id, att) { 
-            let n = prompt("Inserisci il nuovo saldo:", att); 
+            let n = prompt("Nuovo saldo:", att); 
             if(n) { await client.from('conticorrenti').update({ saldo: parseFloat(n.replace(',','.')), ultimo_aggiornamento: new Date().toISOString() }).eq('id', id); caricaDati(); }
         }
-        async function elimina(isin) { if(confirm("Eliminare definitivamente questo titolo?")) { await client.from('patrimonio').delete().eq('isin', isin); caricaDati(); } }
+        async function elimina(isin) { if(confirm("Eliminare?")) { await client.from('patrimonio').delete().eq('isin', isin); caricaDati(); } }
         function toggleForm() { 
             document.getElementById('form-aggiunta').classList.toggle('hidden');
             window.scrollTo({top: 0, behavior: 'smooth'});
