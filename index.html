@@ -2,17 +2,15 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="robots" content="noindex, nofollow">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patrimonio Pro - Cash Flow Edition</title>
+    <title>Patrimonio Pro - Fix Cedole</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         .card-enter { animation: fadeInUp 0.4s ease-out; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .text-blue-400 { color: #60a5fa; } .text-emerald-400 { color: #34d399; } .text-purple-400 { color: #c084fc; }
-        .bg-blue-500\/10 { background-color: rgba(59, 130, 246, 0.1); } 
-        .bg-emerald-500\/10 { background-color: rgba(16, 185, 129, 0.1); } 
+        .bg-blue-500\/10 { background-color: rgba(59, 130, 246, 0.1); } .bg-emerald-500\/10 { background-color: rgba(16, 185, 129, 0.1); } 
         .bg-purple-500\/10 { background-color: rgba(168, 85, 247, 0.1); }
     </style>
 </head>
@@ -21,47 +19,42 @@
     <div id="app" class="max-w-6xl mx-auto hidden">
         <header class="mb-10 flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-800/40 p-6 rounded-3xl border border-slate-700/50">
             <div>
-                <h1 class="text-3xl font-black text-white tracking-tight italic uppercase">💰 Portfolio & Cashflow</h1>
-                <div id="totale-display" class="mt-2 text-3xl font-bold tracking-tighter">Calcolo in corso...</div>
-                <div id="riepilogo-titolari" class="mt-3 flex flex-wrap gap-3 text-[10px] font-black tracking-widest uppercase"></div>
+                <h1 class="text-3xl font-black text-white italic uppercase tracking-tighter">💰 Portfolio Tracker</h1>
+                <div id="totale-display" class="mt-2 text-3xl font-bold tracking-tighter text-emerald-400">Calcolo...</div>
+                <div id="riepilogo-titolari" class="mt-3 flex flex-wrap gap-3 text-[10px] font-black uppercase"></div>
             </div>
-            <button onclick="toggleForm()" class="bg-white hover:bg-slate-200 text-slate-900 px-8 py-4 rounded-2xl font-black transition-all shadow-xl active:scale-95">
-                + AGGIUNGI ASSET
-            </button>
+            <button onclick="toggleForm()" class="bg-white text-slate-900 px-8 py-4 rounded-2xl font-black shadow-xl">+ ASSET</button>
         </header>
 
         <section class="mb-12 bg-slate-900/50 border border-slate-800 rounded-3xl p-6">
-            <h2 class="text-sm font-black text-slate-500 mb-6 uppercase tracking-[0.3em] flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-amber-500"></span> Prossimi Incassi Cedole (Netto 12.5%)
+            <h2 class="text-[10px] font-black text-slate-500 mb-6 uppercase tracking-[0.4em] flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span> Proiezioni Cedole Nette (Tassa 12.5%)
             </h2>
-            <div id="cashflow-container" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                </div>
+            <div id="cashflow-container" class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
         </section>
 
-        <div id="form-aggiunta" class="hidden mb-10 bg-slate-800 p-8 rounded-3xl border border-slate-700 card-enter shadow-2xl">
-            <h2 class="text-xl font-bold mb-6 text-blue-400">Nuovo Asset</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <input type="text" id="new-nome" placeholder="Nome (es. BTP VALORE)" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
-                <input type="text" id="new-isin" placeholder="ISIN" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white font-mono uppercase">
+        <div id="form-aggiunta" class="hidden mb-10 bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-2xl card-enter">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <input type="text" id="new-nome" placeholder="Nome Titolo" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
+                <input type="text" id="new-isin" placeholder="ISIN" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
                 <select id="new-titolare" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
                     <option value="CLARA">CLARA</option>
                     <option value="FEDERICO">FEDERICO</option>
                     <option value="ANTONELLA">ANTONELLA</option>
                 </select>
-                <input type="number" step="0.01" id="new-cedola" placeholder="Cedola Annua % (es. 3.5)" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
-                <input type="text" id="new-mesi" placeholder="Mesi Stacco (es. 05,11)" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
-                <input type="number" step="0.01" id="new-carico" placeholder="Prezzo Carico" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
-                <input type="number" step="0.01" id="new-prezzo" placeholder="Prezzo Attuale" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
-                <input type="number" id="new-qta" placeholder="Quantità" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
+                <input type="number" step="0.01" id="new-cedola" placeholder="Cedola %" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
+                <input type="text" id="new-mesi" placeholder="Mesi stacco (es: 05,11)" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
+                <input type="number" step="0.01" id="new-carico" placeholder="Prezzo Carico" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
+                <input type="number" step="0.01" id="new-prezzo" placeholder="Prezzo Attuale" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
+                <input type="number" id="new-qta" placeholder="Quantità Nominale" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
             </div>
             <div class="mt-8 flex gap-3">
-                <button onclick="salvaNuovo()" class="bg-blue-500 text-white px-8 py-3 rounded-xl font-bold shadow-lg">SALVA</button>
-                <button onclick="toggleForm()" class="bg-slate-700 text-white px-8 py-3 rounded-xl font-bold">ANNULLA</button>
+                <button onclick="salvaNuovo()" class="bg-blue-500 text-white px-8 py-3 rounded-xl font-bold">SALVA</button>
+                <button onclick="toggleForm()" class="bg-slate-700 text-white px-8 py-3 rounded-xl font-bold">CHIUDI</button>
             </div>
         </div>
 
         <div id="grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16"></div>
-        
         <div id="conti-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20"></div>
     </div>
 
@@ -78,7 +71,7 @@
             if (p?.toLowerCase() === "milano") {
                 document.getElementById('app').classList.remove('hidden');
                 caricaDati();
-            } else { document.body.innerHTML = "Accesso negato"; }
+            } else { document.body.innerHTML = "Negato"; }
         }
 
         async function caricaDati() {
@@ -95,88 +88,70 @@
             let totP = 0, totC = 0, perU = {'CLARA':0, 'FEDERICO':0, 'ANTONELLA':0};
             let flowMensile = Array(12).fill(0);
 
-            // RENDER TITOLI & CALCOLO FLOW
             resP.data?.forEach(r => {
-                const valAttuale = (r.prezzo_unitario || 0) * (r.quantita || 0);
-                const prezzoCarico = r.prezzo_di_carico || 100;
-                const performance = ((r.prezzo_unitario - prezzoCarico) / prezzoCarico) * 100;
-                const gainEuro = (r.prezzo_unitario - prezzoCarico) * r.quantita;
+                const qta = parseFloat(r.quantita) || 0;
+                const prAtt = parseFloat(r.prezzo_unitario) || 0;
+                const prCar = parseFloat(r.prezzo_di_carico) || 100;
+                const valAtt = qta * prAtt;
                 
-                totP += valAttuale; perU[r.titolare] += valAttuale;
+                totP += valAtt; perU[r.titolare] += valAtt;
                 const col = getCol(r.titolare);
 
-                // Logica Cedole
+                // LOGICA CEDOLE CORRETTA
                 if(r.cedola_percentuale > 0 && r.mesi_stacco) {
-                    const mesi = r.mesi_stacco.split(',');
-                    const nettoMese = ((r.quantita * (r.cedola_percentuale / 100)) / mesi.length) * 0.875;
-                    mesi.forEach(m => { flowMensile[parseInt(m)-1] += nettoMese; });
+                    const mesiArr = r.mesi_stacco.split(',').map(m => m.trim());
+                    const cedNettaSingola = (qta * (parseFloat(r.cedola_percentuale)/100) / mesiArr.length) * 0.875;
+                    mesiArr.forEach(m => {
+                        const idx = parseInt(m) - 1;
+                        if(idx >= 0 && idx < 12) flowMensile[idx] += cedNettaSingola;
+                    });
                 }
 
                 cT.innerHTML += `
-                    <div class="bg-slate-800 border-l-4 border-${col}-500 rounded-2xl p-6 shadow-2xl card-enter relative group">
+                    <div class="bg-slate-800 border-l-4 border-${col}-500 rounded-2xl p-6 shadow-xl card-enter">
                         <div class="flex justify-between items-start mb-4">
-                            <div class="flex flex-col gap-1">
-                                <span class="px-2 py-0.5 bg-${col}-500/10 text-${col}-400 text-[9px] font-black rounded border border-${col}-500/20 uppercase w-fit">${r.titolare}</span>
-                                <h3 class="text-white font-black text-lg uppercase leading-tight mt-1">${r.nome_asset || 'Asset'}</h3>
-                            </div>
-                            <div class="text-right">
-                                <span class="block text-${performance >= 0 ? 'emerald' : 'red'}-400 text-xs font-black bg-slate-900/80 px-2 py-1 rounded-lg border border-slate-700">
-                                    ${performance >= 0 ? '+' : ''}${performance.toFixed(2)}%
-                                </span>
-                            </div>
+                            <span class="px-2 py-0.5 bg-${col}-500/10 text-${col}-400 text-[9px] font-black rounded border border-${col}-500/20 uppercase">${r.titolare}</span>
+                            <span class="text-emerald-400 text-xs font-black">€${valAtt.toLocaleString('it-IT')}</span>
                         </div>
-
-                        <h3 class="text-2xl font-black text-white mb-4">€ ${valAttuale.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3>
-
-                        <div class="grid grid-cols-2 gap-4 bg-slate-900/60 p-3 rounded-xl mb-4 border border-slate-700/50">
-                            <div><p class="text-slate-500 text-[7px] uppercase font-black">Cedola Annua %</p>
+                        <h3 class="text-white font-black uppercase text-sm mb-1">${r.nome_asset || 'Asset'}</h3>
+                        <p class="text-slate-500 text-[9px] font-mono mb-4">${r.isin}</p>
+                        
+                        <div class="grid grid-cols-2 gap-3 bg-slate-900/50 p-3 rounded-xl border border-slate-700/30">
+                            <div><p class="text-slate-500 text-[7px] uppercase font-bold">Cedola %</p>
                                 <input type="number" step="0.01" value="${r.cedola_percentuale}" onchange="aggCed('${r.isin}', this.value)" class="bg-transparent font-bold text-amber-400 w-full outline-none text-xs"></div>
-                            <div><p class="text-slate-500 text-[7px] uppercase font-black">Mesi (es. 05,11)</p>
+                            <div><p class="text-slate-500 text-[7px] uppercase font-bold">Mesi</p>
                                 <input type="text" value="${r.mesi_stacco || ''}" onchange="aggMesi('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full outline-none text-xs"></div>
                         </div>
-
-                        <div class="grid grid-cols-3 gap-2 bg-slate-900/40 p-2 rounded-xl border border-slate-700/30">
-                            <input type="number" step="0.01" value="${r.prezzo_di_carico}" onchange="aggCarico('${r.isin}', this.value)" class="bg-transparent text-center font-bold text-white w-full outline-none text-[10px]">
-                            <input type="number" step="0.01" value="${r.prezzo_unitario}" onchange="aggP('${r.isin}', this.value)" class="bg-transparent text-center font-bold text-white w-full outline-none text-[10px]">
-                            <input type="number" value="${r.quantita}" onchange="aggQ('${r.isin}', this.value)" class="bg-transparent text-center font-bold text-white w-full outline-none text-[10px]">
-                        </div>
-
-                        <div class="mt-4 flex justify-end">
-                            <button onclick="elimina('${r.isin}')" class="text-slate-600 hover:text-red-500 text-[9px] font-black uppercase">Elimina Asset</button>
+                        <div class="mt-4 flex justify-between gap-4">
+                            <div class="flex flex-col"><span class="text-[7px] text-slate-500 uppercase">Q.tà</span><input type="number" value="${qta}" onchange="aggQ('${r.isin}', this.value)" class="bg-transparent font-bold text-white outline-none text-xs"></div>
+                            <button onclick="elimina('${r.isin}')" class="text-red-500/50 hover:text-red-500 text-[9px] font-bold uppercase">Elimina</button>
                         </div>
                     </div>`;
             });
 
-            // RENDER CASH FLOW CALENDAR
+            // RENDER CALENDARIO
             flowMensile.forEach((val, i) => {
-                const attivo = val > 0 ? 'border-amber-500/50 bg-amber-500/5' : 'border-slate-800 opacity-30';
+                const attivo = val > 0 ? 'border-amber-500/50 bg-amber-500/10' : 'border-slate-800 opacity-20';
                 cF.innerHTML += `
-                    <div class="border ${attivo} rounded-xl p-3 text-center transition-all">
-                        <p class="text-[9px] font-black uppercase text-slate-500">${MESI_NOMI[i]}</p>
-                        <p class="text-sm font-black ${val > 0 ? 'text-amber-400' : 'text-slate-700'}">€${val.toFixed(0)}</p>
+                    <div class="border ${attivo} rounded-2xl p-4 text-center">
+                        <p class="text-[10px] font-black uppercase text-slate-500 mb-1">${MESI_NOMI[i]}</p>
+                        <p class="text-lg font-black ${val > 0 ? 'text-amber-400' : 'text-slate-700'}">€${val.toFixed(0)}</p>
                     </div>`;
             });
 
-            // RENDER CONTI
+            // CONTI
             resC.data?.forEach(c => {
                 totC += (c.saldo || 0); perU[c.titolare] += (c.saldo || 0);
                 const col = getCol(c.titolare);
-                cC.innerHTML += `
-                    <div class="bg-slate-800/40 border-l-4 border-${col}-500/30 rounded-2xl p-6 shadow-lg">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-${col}-400 text-[9px] font-black uppercase">${c.titolare}</span>
-                            <span class="text-[9px] text-slate-500 font-bold uppercase">${c.istituto}</span>
-                        </div>
-                        <h3 class="text-2xl font-black text-white">€ ${c.saldo.toLocaleString('it-IT')}</h3>
-                        <button onclick="aggS('${c.id}', ${c.saldo})" class="mt-4 text-${col}-400 text-[9px] font-black uppercase">Aggiorna Saldo</button>
-                    </div>`;
+                cC.innerHTML += `<div class="bg-slate-800/40 border border-slate-700 p-6 rounded-2xl flex justify-between items-center">
+                    <div><p class="text-${col}-400 text-[9px] font-black uppercase">${c.titolare}</p><h3 class="text-xl font-bold text-white">€${c.saldo.toLocaleString('it-IT')}</h3></div>
+                    <button onclick="aggS('${c.id}', ${c.saldo})" class="text-slate-500 text-[10px] font-bold">MODIFICA</button>
+                </div>`;
             });
 
-            document.getElementById('totale-display').innerHTML = `<span class="text-emerald-400">€ ${(totP + totC).toLocaleString('it-IT')}</span>`;
+            document.getElementById('totale-display').innerText = "€ " + (totP + totC).toLocaleString('it-IT');
             let rip = "";
-            for (let u in perU) { 
-                rip += `<div class="bg-slate-900 px-3 py-1 rounded-full border border-slate-700"><span class="text-${getCol(u)}-400">${u}:</span> <span class="text-white">€${perU[u].toLocaleString('it-IT')}</span></div>`; 
-            }
+            for (let u in perU) { rip += `<div class="bg-slate-900 px-4 py-2 rounded-xl border border-slate-700 text-${getCol(u)}-400 font-bold">${u}: €${perU[u].toLocaleString('it-IT')}</div>`; }
             document.getElementById('riepilogo-titolari').innerHTML = rip;
         }
 
@@ -195,13 +170,8 @@
 
         async function aggCed(isin, v) { await client.from('patrimonio').update({ cedola_percentuale: parseFloat(v) }).eq('isin', isin); caricaDati(); }
         async function aggMesi(isin, v) { await client.from('patrimonio').update({ mesi_stacco: v }).eq('isin', isin); caricaDati(); }
-        async function aggP(isin, v) { await client.from('patrimonio').update({ prezzo_unitario: parseFloat(v), ultimo_aggiornamento: new Date() }).eq('isin', isin); caricaDati(); }
         async function aggQ(isin, v) { await client.from('patrimonio').update({ quantita: parseFloat(v) }).eq('isin', isin); caricaDati(); }
-        async function aggCarico(isin, v) { await client.from('patrimonio').update({ prezzo_di_carico: parseFloat(v) }).eq('isin', isin); caricaDati(); }
-        async function aggS(id, att) { 
-            let n = prompt("Nuovo saldo:", att); 
-            if(n) { await client.from('conticorrenti').update({ saldo: parseFloat(n.replace(',','.')) }).eq('id', id); caricaDati(); }
-        }
+        async function aggS(id, att) { let n = prompt("Nuovo saldo:", att); if(n) { await client.from('conticorrenti').update({ saldo: parseFloat(n.replace(',','.')) }).eq('id', id); caricaDati(); } }
         async function elimina(isin) { if(confirm("Eliminare?")) { await client.from('patrimonio').delete().eq('isin', isin); caricaDati(); } }
         function toggleForm() { document.getElementById('form-aggiunta').classList.toggle('hidden'); }
         window.onload = inizializza;
