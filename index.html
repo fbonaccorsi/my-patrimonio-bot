@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patrimonio Pro - Definitive Edition</title>
+    <title>Patrimonio Pro - Fix Finale</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         .card-enter { animation: fadeInUp 0.4s ease-out; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body class="bg-[#0f172a] text-slate-200 p-4 md:p-8 font-sans">
@@ -25,29 +26,29 @@
 
         <section class="mb-12 bg-slate-900/40 border border-slate-800 rounded-3xl p-6">
             <h2 class="text-[10px] font-black text-slate-500 mb-6 uppercase tracking-[0.4em] flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-amber-500"></span> Prossime Cedole Nette (12.5% Tasse)
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span> Cedole Nette Attese (Tassa 12.5%)
             </h2>
-            <div id="cashflow-container" class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
+            <div id="cashflow-container" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
         </section>
 
         <div id="form-aggiunta" class="hidden mb-10 bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-2xl card-enter">
-            <h2 class="text-xl font-bold mb-6 text-blue-400 uppercase">Inserimento Titolo</h2>
+            <h2 class="text-xl font-bold mb-6 text-blue-400 uppercase italic">Nuovo Inserimento</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <input type="text" id="new-nome" placeholder="Nome Asset" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
+                <input type="text" id="new-nome" placeholder="Nome Titolo" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
                 <input type="text" id="new-isin" placeholder="Codice ISIN" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
                 <select id="new-titolare" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
                     <option value="CLARA">CLARA</option>
                     <option value="FEDERICO">FEDERICO</option>
                     <option value="ANTONELLA">ANTONELLA</option>
                 </select>
-                <input type="number" step="0.01" id="new-qta" placeholder="Quantità Nominale" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
-                <input type="number" step="0.01" id="new-carico" placeholder="Prezzo di Carico" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
-                <input type="number" step="0.01" id="new-prezzo" placeholder="Prezzo Attuale" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
-                <input type="number" step="0.01" id="new-cedola" placeholder="Cedola Annua %" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
-                <input type="text" id="new-mesi" placeholder="Mesi Stacco (es: 03,09)" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
+                <input type="number" step="0.01" id="new-qta" placeholder="Quantità Nominale (es 10000)" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
+                <input type="number" step="0.01" id="new-carico" placeholder="Prezzo Carico (es 98.5)" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
+                <input type="number" step="0.01" id="new-prezzo" placeholder="Prezzo Attuale (es 101.2)" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
+                <input type="number" step="0.01" id="new-cedola" placeholder="Cedola Annua % (es 3.5)" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
+                <input type="text" id="new-mesi" placeholder="Mesi Stacco (es: 05,11)" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
             </div>
             <div class="mt-6 flex gap-3">
-                <button onclick="salvaNuovo()" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-bold">SALVA</button>
+                <button onclick="salvaNuovo()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold">SALVA</button>
                 <button onclick="toggleForm()" class="bg-slate-700 text-white px-8 py-3 rounded-xl font-bold">CHIUDI</button>
             </div>
         </div>
@@ -102,59 +103,65 @@
                 perU[r.titolare] += valAtt;
                 const col = getCol(r.titolare);
 
-                // 3. CALCOLO CEDOLE (Logica Definitiva)
+                // 3. LOGICA DI CALCOLO CEDOLE CORRETTA
                 if(r.cedola_percentuale > 0 && r.mesi_stacco) {
-                    const mesiArr = r.mesi_stacco.split(',').map(m => m.trim());
-                    const numRate = mesiArr.length;
-                    const cedNettaSingola = ((qta * (parseFloat(r.cedola_percentuale) / 100)) / numRate) * 0.875;
-                    
-                    mesiArr.forEach(m => {
-                        const idx = parseInt(m) - 1;
-                        if(idx >= 0 && idx < 12) flowMensile[idx] += cedNettaSingola;
-                    });
+                    const tassoAnnuale = parseFloat(r.cedola_percentuale) / 100;
+                    const mesiRaw = String(r.mesi_stacco).replace('.', ','); 
+                    const mesiArr = mesiRaw.split(',').map(m => m.trim()).filter(m => m !== "");
+                    const numeroStacchi = mesiArr.length;
+
+                    if (numeroStacchi > 0) {
+                        const totaleNettoAnnuo = (qta * tassoAnnuale) * 0.875;
+                        const singolaCedolaNetta = totaleNettoAnnuo / numeroStacchi;
+                        
+                        mesiArr.forEach(m => {
+                            const idx = parseInt(m) - 1;
+                            if(idx >= 0 && idx < 12) flowMensile[idx] += singolaCedolaNetta;
+                        });
+                    }
                 }
 
                 cT.innerHTML += `
-                    <div class="bg-slate-800 border-l-4 border-${col}-500 rounded-3xl p-6 shadow-2xl card-enter relative group">
+                    <div class="bg-slate-800 border-l-4 border-${col}-500 rounded-3xl p-6 shadow-2xl card-enter relative">
                         <div class="flex justify-between items-start mb-4">
                             <div>
-                                <span class="px-2 py-0.5 bg-${col}-500/10 text-${col}-400 text-[9px] font-black rounded border border-${col}-500/20 uppercase">${r.titolare}</span>
-                                <h3 class="text-white font-black text-lg uppercase leading-tight mt-1">${r.nome_asset || 'Asset'}</h3>
+                                <span class="px-2 py-0.5 bg-${col}-500/10 text-${col}-400 text-[9px] font-black rounded border border-${col}-500/20 uppercase tracking-tighter">${r.titolare}</span>
+                                <h3 class="text-white font-black text-lg uppercase leading-tight mt-1 truncate max-w-[150px]">${r.nome_asset || 'Asset'}</h3>
                             </div>
-                            <span class="text-${colPerf}-400 text-xs font-black bg-slate-900 px-2 py-1 rounded-lg border border-slate-700">
+                            <span class="text-${colPerf}-400 text-[10px] font-black bg-slate-900 px-2 py-1 rounded-lg border border-slate-700 shadow-inner">
                                 ${performance >= 0 ? '+' : ''}${performance.toFixed(2)}%
                             </span>
                         </div>
                         <div class="mb-4">
                             <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest">Controvalore</p>
-                            <h3 class="text-3xl font-black text-white">€ ${valAtt.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3>
+                            <h3 class="text-2xl font-black text-white italic">€ ${valAtt.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h3>
                         </div>
                         <div class="grid grid-cols-2 gap-3 bg-slate-900/60 p-3 rounded-2xl mb-4 border border-slate-700/50">
-                            <div><p class="text-slate-500 text-[8px] uppercase font-black mb-1">Cedola %</p>
+                            <div><p class="text-slate-500 text-[8px] uppercase font-black mb-1">Cedola Annua %</p>
                                 <input type="number" step="0.01" value="${r.cedola_percentuale}" onchange="aggCed('${r.isin}', this.value)" class="bg-transparent font-bold text-amber-400 w-full outline-none text-sm"></div>
                             <div><p class="text-slate-500 text-[8px] uppercase font-black mb-1">Mesi Stacco</p>
                                 <input type="text" value="${r.mesi_stacco || ''}" onchange="aggMesi('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full outline-none text-sm"></div>
                         </div>
-                        <div class="grid grid-cols-3 gap-2 bg-slate-900/30 p-2 rounded-xl border border-slate-700/30">
-                            <div><p class="text-[7px] text-slate-500 uppercase font-black text-center">Carico</p>
-                                <input type="number" step="0.01" value="${prCar}" onchange="aggCarico('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full text-center outline-none text-[10px]"></div>
-                            <div><p class="text-[7px] text-slate-500 uppercase font-black text-center">Attuale</p>
+                        <div class="grid grid-cols-3 gap-2 bg-slate-900/30 p-2 rounded-xl border border-slate-700/30 text-center uppercase">
+                            <div><p class="text-[7px] text-slate-500 font-black mb-1">Carico</p>
+                                <input type="number" step="0.01" value="${prCar}" onchange="aggCarico('${r.isin}', this.value)" class="bg-transparent font-bold text-slate-300 w-full text-center outline-none text-[10px]"></div>
+                            <div><p class="text-[7px] text-slate-500 font-black mb-1">Attuale</p>
                                 <input type="number" step="0.01" value="${prAtt}" onchange="aggP('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full text-center outline-none text-[10px]"></div>
-                            <div><p class="text-[7px] text-slate-500 uppercase font-black text-center">Q.tà Nom.</p>
+                            <div><p class="text-[7px] text-slate-500 font-black mb-1">Nominale</p>
                                 <input type="number" value="${qta}" onchange="aggQ('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full text-center outline-none text-[10px]"></div>
                         </div>
-                        <div class="mt-4 flex justify-between items-center opacity-30">
-                            <p class="text-[8px] font-mono">${r.isin}</p>
-                            <button onclick="elimina('${r.isin}')" class="text-red-500 hover:text-red-400 text-[9px] font-black uppercase">Rimuovi</button>
+                        <div class="mt-4 flex justify-between items-center opacity-30 group-hover:opacity-100 transition-opacity">
+                            <p class="text-[8px] font-mono tracking-tighter">${r.isin}</p>
+                            <button onclick="elimina('${r.isin}')" class="text-red-500 hover:text-red-400 text-[9px] font-black uppercase">Elimina</button>
                         </div>
                     </div>`;
             });
 
             flowMensile.forEach((val, i) => {
-                const attivo = val > 0 ? 'border-amber-500/50 bg-amber-500/10' : 'border-slate-800 opacity-20';
-                cF.innerHTML += `<div class="border ${attivo} rounded-2xl p-4 text-center">
+                const attivo = val > 0 ? 'border-amber-500/50 bg-amber-500/10' : 'border-slate-800/50 opacity-20';
+                cF.innerHTML += `<div class="border ${attivo} rounded-2xl p-4 text-center transition-all">
                     <p class="text-[10px] font-black text-slate-500 mb-1 uppercase">${MESI_NOMI[i]}</p>
-                    <p class="text-lg font-black ${val > 0 ? 'text-amber-400' : 'text-slate-700'}">€${val.toFixed(0)}</p>
+                    <p class="text-sm font-black ${val > 0 ? 'text-amber-400' : 'text-slate-700'}">€${val.toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</p>
                 </div>`;
             });
 
@@ -162,8 +169,8 @@
                 totC += (c.saldo || 0); perU[c.titolare] += (c.saldo || 0);
                 const col = getCol(c.titolare);
                 cC.innerHTML += `<div class="bg-slate-800/40 border border-slate-700 p-6 rounded-3xl flex justify-between items-center shadow-lg">
-                    <div><p class="text-${col}-400 text-[10px] font-black uppercase mb-1">${c.titolare}</p><h3 class="text-2xl font-bold text-white">€${c.saldo.toLocaleString('it-IT')}</h3></div>
-                    <button onclick="aggS('${c.id}', ${c.saldo})" class="bg-slate-900 p-2 rounded-xl text-slate-400 hover:text-white border border-slate-700 transition-all">✎</button>
+                    <div><p class="text-${col}-400 text-[10px] font-black uppercase mb-1">${c.titolare}</p><h3 class="text-2xl font-bold text-white tracking-tighter">€${c.saldo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3></div>
+                    <button onclick="aggS('${c.id}', ${c.saldo})" class="bg-slate-900 p-2 rounded-xl text-slate-400 hover:text-white border border-slate-700 transition-all text-xs">MODIFICA</button>
                 </div>`;
             });
 
@@ -171,8 +178,8 @@
             let rip = "";
             for (let u in perU) {
                 const c = getCol(u);
-                rip += `<div class="bg-slate-800 px-4 py-2 rounded-2xl border border-slate-700 flex items-center gap-2 font-bold text-xs uppercase shadow-md">
-                    <span class="w-2 h-2 rounded-full bg-${c}-500"></span> <span class="text-${c}-400">${u}:</span> <span class="text-white font-mono">€${perU[u].toLocaleString('it-IT')}</span>
+                rip += `<div class="bg-slate-800 px-4 py-2 rounded-2xl border border-slate-700 flex items-center gap-2 font-black text-[11px] uppercase shadow-md">
+                    <span class="w-2 h-2 rounded-full bg-${c}-500"></span> <span class="text-${c}-400">${u}:</span> <span class="text-white">€${perU[u].toLocaleString('it-IT', {maximumFractionDigits:0})}</span>
                 </div>`;
             }
             document.getElementById('riepilogo-titolari').innerHTML = rip;
@@ -202,7 +209,7 @@
             toggleForm(); caricaDati();
         }
         
-        function toggleForm() { document.getElementById('form-aggiunta').classList.toggle('hidden'); }
+        function toggleForm() { document.getElementById('form-aggiunta').classList.toggle('hidden'); window.scrollTo({top: 0, behavior: 'smooth'}); }
         window.onload = inizializza;
     </script>
 </body>
