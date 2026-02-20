@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patrimonio Reale</title>
+    <title>Patrimonio Gestito - Originale</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -42,7 +42,7 @@
         }
 
         async function caricaDati() {
-            // QUESTO RISOLVE IL TRIPLO: Svuota i contenitori prima di ricaricare
+            // PULIZIA TOTALE - Impedisce il triplicarsi dei dati
             document.getElementById('grid-container').innerHTML = "";
             document.getElementById('conti-container').innerHTML = "";
 
@@ -52,42 +52,43 @@
             let totCapitale = 0;
             let riepilogo = { 'CLARA': 0, 'FEDERICO': 0, 'ANTONELLA': 0 };
 
-            // RENDERING PATRIMONIO (ORIGINALE)
+            // RENDERING PATRIMONIO
             assets?.forEach(r => {
                 const qta = parseFloat(r.quantita) || 0;
                 const pAtt = parseFloat(r.prezzo_unitario) || 0;
                 const valore = (qta * pAtt) / 100;
                 totCapitale += valore;
                 riepilogo[r.titolare] += valore;
-                const col = {'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[r.titolare];
+                const col = {'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[r.titolare] || 'slate';
 
                 document.getElementById('grid-container').innerHTML += `
                     <div class="bg-slate-800 border-l-4 border-${col}-500 rounded-3xl p-6 shadow-2xl relative">
-                        <div class="mb-2 uppercase font-black text-[10px] text-${col}-400">${r.titolare}</div>
+                        <div class="mb-2 uppercase font-black text-[10px] text-${col}-400 font-mono tracking-widest">${r.titolare}</div>
                         <h3 class="text-white font-black text-xl mb-4 truncate uppercase tracking-tight">${r.nome_asset}</h3>
-                        <p class="text-[9px] text-slate-500 uppercase font-black">Valore di Mercato</p>
+                        <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest">Valore di Mercato</p>
                         <p class="text-3xl font-black text-white italic">€ ${valore.toLocaleString('it-IT', {minimumFractionDigits: 2})}</p>
                     </div>`;
             });
 
-            // RENDERING CONTI CORRENTI (ORIGINALE)
+            // RENDERING CONTI CORRENTI
             conti?.forEach(c => {
                 const saldo = parseFloat(c.saldo) || 0;
                 totCapitale += saldo;
                 riepilogo[c.titolare] += saldo;
-                const col = {'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[c.titolare];
+                const col = {'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[c.titolare] || 'slate';
                 
                 document.getElementById('conti-container').innerHTML += `
-                    <div class="bg-slate-800 border-t-4 border-${col}-500 p-6 rounded-[2rem] shadow-xl flex justify-between items-center">
+                    <div class="bg-slate-800 border-t-4 border-${col}-500 p-6 rounded-[2rem] shadow-xl flex justify-between items-center group">
                         <div>
                             <p class="text-${col}-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">${c.titolare}</p>
-                            <p class="text-slate-400 text-xs font-bold uppercase mb-2">${c.nome_conto}</p>
+                            <p class="text-slate-400 text-xs font-bold uppercase mb-2">${c.nome_conto || 'Conto'}</p>
                             <h3 class="text-3xl font-black text-white italic tracking-tighter">€ ${saldo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3>
                         </div>
-                        <button onclick="updateSaldo('${c.id}', ${saldo})" class="bg-slate-900 p-4 rounded-2xl border border-slate-700 text-slate-500 hover:text-white text-[10px] font-black uppercase">Modifica</button>
+                        <button onclick="updateSaldo('${c.id}', ${saldo})" class="bg-slate-900 p-4 rounded-2xl border border-slate-700 text-slate-500 hover:text-white transition-all text-[10px] font-black uppercase">Modifica</button>
                     </div>`;
             });
 
+            // UPDATE TOTALI
             document.getElementById('totale-display').innerText = "€ " + totCapitale.toLocaleString('it-IT', {minimumFractionDigits: 2});
             document.getElementById('riepilogo-titolari').innerHTML = Object.keys(riepilogo).map(u => `
                 <div class="bg-slate-800 px-4 py-2 rounded-xl border border-slate-700 text-xs font-black uppercase italic shadow-lg">
@@ -97,7 +98,10 @@
 
         async function updateSaldo(id, attuale) {
             let n = prompt("Nuovo saldo:", attuale);
-            if(n) { await client.from('conticorrenti').update({saldo: parseFloat(n.replace(',','.'))}).eq('id', id); caricaDati(); }
+            if(n) { 
+                await client.from('conticorrenti').update({saldo: parseFloat(n.replace(',','.'))}).eq('id', id); 
+                caricaDati(); 
+            }
         }
 
         window.onload = inizializza;
