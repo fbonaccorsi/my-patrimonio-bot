@@ -3,52 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patrimonio Pro - Ripristino Totale</title>
+    <title>Patrimonio - Versione Pulita</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        .card-btp { transition: all 0.3s ease; }
-        .card-btp:hover { transform: translateY(-5px); border-color: rgba(255,255,255,0.2); }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    </style>
 </head>
 <body class="bg-[#0f172a] text-slate-200 p-4 md:p-8 font-sans">
 
     <div id="app" class="max-w-6xl mx-auto hidden">
-        <header class="mb-10 flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-800/40 p-8 rounded-3xl border border-slate-700/50 shadow-2xl">
-            <div>
-                <h1 class="text-3xl font-black text-white italic uppercase tracking-tighter">💰 PATRIMONIO GESTITO</h1>
-                <div id="totale-display" class="mt-2 text-5xl font-black tracking-tighter text-white">---</div>
-                <div id="riepilogo-titolari" class="mt-4 flex flex-wrap gap-3"></div>
-            </div>
-            <button onclick="document.getElementById('form-aggiunta').classList.toggle('hidden')" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-black shadow-xl transition-all uppercase tracking-widest text-sm">Aggiungi Titolo</button>
+        <header class="mb-10 bg-slate-800/40 p-8 rounded-[2rem] border border-slate-700/50 shadow-2xl">
+            <h1 class="text-3xl font-black text-white italic uppercase tracking-tighter">💰 PATRIMONIO GESTITO</h1>
+            <div id="totale-display" class="mt-2 text-5xl font-black tracking-tighter text-white">---</div>
+            <div id="riepilogo-titolari" class="mt-4 flex flex-wrap gap-3"></div>
         </header>
-
-        <section class="mb-12 bg-slate-900/60 border border-slate-800 rounded-3xl p-6 shadow-inner">
-            <h2 class="text-[10px] font-black text-slate-500 mb-6 uppercase tracking-[0.4em] flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Flusso Cedolare Netto Atteso
-            </h2>
-            <div id="cashflow-container" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
-        </section>
-
-        <div id="form-aggiunta" class="hidden mb-10 bg-slate-800 p-8 rounded-3xl border border-blue-500/30 shadow-2xl">
-            <h2 class="text-xl font-bold mb-6 text-blue-400 uppercase italic">Nuovo Inserimento</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <input type="text" id="new-nome" placeholder="Nome Titolo" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none focus:border-blue-500">
-                <input type="text" id="new-isin" placeholder="ISIN" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
-                <select id="new-titolare" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
-                    <option value="CLARA">CLARA</option>
-                    <option value="FEDERICO">FEDERICO</option>
-                    <option value="ANTONELLA">ANTONELLA</option>
-                </select>
-                <input type="number" step="0.01" id="new-qta" placeholder="Valore Nominale" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
-                <input type="number" step="0.01" id="new-carico" placeholder="P. Carico" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
-                <input type="number" step="0.01" id="new-prezzo" placeholder="P. Attuale" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
-                <input type="number" step="0.01" id="new-cedola" placeholder="Cedola %" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
-                <input type="text" id="new-mesi" placeholder="Mesi (es: 05,11)" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
-            </div>
-            <button onclick="salvaNuovo()" class="mt-6 bg-blue-600 text-white px-10 py-3 rounded-xl font-bold uppercase italic">Salva in Database</button>
-        </div>
 
         <div id="grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16"></div>
         
@@ -63,109 +29,64 @@
         const SB_URL = "https://xmwibmjbqcerxrkbepbh.supabase.co";
         const SB_KEY = "sb_publishable_f5oxVaJVgTEtmCRfnjeSng_GSAb5NoO";
         const client = supabase.createClient(SB_URL, SB_KEY);
-        const MESI_NOMI = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
 
         async function inizializza() {
             let p = prompt("Password:");
             if (p?.toLowerCase() === "milano") {
                 document.getElementById('app').classList.remove('hidden');
-                await caricaDati();
+                caricaDati();
             }
         }
 
         async function caricaDati() {
+            // SVUOTA TUTTO: Risolve fisicamente il problema del triplicato a schermo
+            document.getElementById('grid-container').innerHTML = "";
+            document.getElementById('conti-container').innerHTML = "";
+
             const { data: assets } = await client.from('patrimonio').select('*').order('titolare');
             const { data: conti } = await client.from('conticorrenti').select('*').order('titolare');
 
             let totCapitale = 0;
-            let flowMensile = Array(12).fill(0);
             let riepilogo = { 'CLARA': 0, 'FEDERICO': 0, 'ANTONELLA': 0 };
 
-            // CREIAMO IL CONTENUTO IN MEMORIA (Niente += diretto sul DOM)
-            let htmlAssets = "";
-            let htmlConti = "";
-            let htmlCash = "";
-
+            // RENDERING PATRIMONIO
             assets?.forEach(r => {
-                const qta = parseFloat(r.quantita) || 0;
-                const pAtt = parseFloat(r.prezzo_unitario) || 0;
-                const pCar = parseFloat(r.prezzo_di_carico) || 100;
-                const cPerc = parseFloat(r.cedola_percentuale) || 0;
-                
-                const valore = (qta * pAtt) / 100;
-                const perf = ((pAtt - pCar) / pCar) * 100;
+                const valore = (parseFloat(r.quantita) * parseFloat(r.prezzo_unitario)) / 100;
                 totCapitale += valore;
                 riepilogo[r.titolare] += valore;
-                const col = {'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[r.titolare];
+                const col = {'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[r.titolare] || 'slate';
 
-                // Calcolo Cedola Netta
-                if (cPerc > 0 && r.mesi_stacco) {
-                    const mesi = String(r.mesi_stacco).split(',').map(m => parseInt(m.trim())).filter(m => !isNaN(m));
-                    const nettoRata = ((qta * (cPerc/100)) * 0.875) / mesi.length;
-                    mesi.forEach(m => { if(m >= 1 && m <= 12) flowMensile[m-1] += nettoRata; });
-                }
-
-                htmlAssets += `
-                    <div class="bg-slate-800 border-l-4 border-${col}-500 rounded-3xl p-6 shadow-2xl card-btp">
-                        <div class="flex justify-between items-center mb-4 uppercase font-black text-[10px]">
-                            <span class="text-${col}-400 bg-slate-900 px-2 py-1 rounded border border-slate-700">${r.titolare}</span>
-                            <span class="${perf >= 0 ? 'text-emerald-400' : 'text-red-400'} bg-slate-900 px-2 py-1 rounded border border-slate-700">
-                                ${perf >= 0 ? '+' : ''}${perf.toFixed(2)}%
-                            </span>
-                        </div>
+                document.getElementById('grid-container').innerHTML += `
+                    <div class="bg-slate-800 border-l-4 border-${col}-500 rounded-3xl p-6 shadow-2xl">
+                        <div class="mb-2 uppercase font-black text-[10px] text-${col}-400">${r.titolare}</div>
                         <h3 class="text-white font-black text-xl mb-4 truncate uppercase italic tracking-tight">${r.nome_asset}</h3>
-                        <div class="mb-4">
-                            <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest">Valore Attuale</p>
-                            <p class="text-3xl font-black text-white italic tracking-tighter">€ ${valore.toLocaleString('it-IT', {minimumFractionDigits: 2})}</p>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 bg-slate-900/60 p-3 rounded-xl border border-slate-700/50 mb-4">
-                            <div><p class="text-[8px] text-slate-500 uppercase font-black">Cedola %</p>
-                                <input type="number" step="0.01" value="${cPerc}" onchange="update('cedola_percentuale','${r.isin}',this.value)" class="bg-transparent text-amber-400 font-bold outline-none w-full"></div>
-                            <div><p class="text-[8px] text-slate-500 uppercase font-black">Mesi Stacco</p>
-                                <input type="text" value="${r.mesi_stacco}" onchange="update('mesi_stacco','${r.isin}',this.value)" class="bg-transparent text-white font-bold outline-none w-full"></div>
-                        </div>
-                        <div class="grid grid-cols-3 gap-1 text-[8px] text-center opacity-40 hover:opacity-100 transition-opacity">
-                            <div><p>CARICO</p><input type="number" step="0.01" value="${pCar}" onchange="update('prezzo_di_carico','${r.isin}',this.value)" class="bg-transparent text-white text-center w-full outline-none"></div>
-                            <div><p>ATTUALE</p><input type="number" step="0.01" value="${pAtt}" onchange="update('prezzo_unitario','${r.isin}',this.value)" class="bg-transparent text-white text-center w-full outline-none"></div>
-                            <div><p>NOMINALE</p><input type="number" value="${qta}" onchange="update('quantita','${r.isin}',this.value)" class="bg-transparent text-white text-center w-full outline-none"></div>
-                        </div>
-                        <div class="mt-4 pt-4 border-t border-slate-700/30 flex justify-between items-center">
-                            <span class="text-[8px] font-mono text-slate-600">${r.isin}</span>
-                            <button onclick="rimuovi('${r.isin}')" class="text-red-500 text-[9px] font-black uppercase hover:underline">Elimina</button>
-                        </div>
+                        <p class="text-[9px] text-slate-500 uppercase font-black">Valore di Mercato</p>
+                        <p class="text-3xl font-black text-white italic tracking-tighter">€ ${valore.toLocaleString('it-IT', {minimumFractionDigits: 2})}</p>
                     </div>`;
             });
 
+            // RENDERING CONTI CORRENTI
             conti?.forEach(c => {
                 const saldo = parseFloat(c.saldo) || 0;
                 totCapitale += saldo;
                 riepilogo[c.titolare] += saldo;
-                const col = {'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[c.titolare];
+                const col = {'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[c.titolare] || 'slate';
                 
-                htmlConti += `
-                    <div class="bg-slate-800 border-t-4 border-${col}-500 p-6 rounded-[2rem] shadow-xl flex justify-between items-center">
+                // FIX NOME CONTO: verifica se la colonna è nome_conto, banca o descrizione
+                const nomeBanca = c.nome_conto || c.banca || c.descrizione || "Conto Corrente";
+
+                document.getElementById('conti-container').innerHTML += `
+                    <div class="bg-slate-800 border-t-4 border-${col}-500 p-6 rounded-[2rem] shadow-xl flex justify-between items-center group">
                         <div>
                             <p class="text-${col}-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">${c.titolare}</p>
-                            <p class="text-slate-400 text-xs font-bold uppercase mb-2 italic">${c.nome_conto}</p>
+                            <p class="text-slate-400 text-xs font-bold uppercase mb-2 italic">${nomeBanca}</p>
                             <h3 class="text-3xl font-black text-white italic tracking-tighter">€ ${saldo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3>
                         </div>
-                        <button onclick="updateSaldo('${c.id}', ${saldo})" class="bg-slate-900 p-4 rounded-2xl border border-slate-700 text-slate-500 hover:text-white text-[10px] font-black">EDIT</button>
+                        <button onclick="updateSaldo('${c.id}', ${saldo})" class="bg-slate-900 p-4 rounded-2xl border border-slate-700 text-slate-500 hover:text-white transition-all text-[10px] font-black uppercase">Modifica</button>
                     </div>`;
             });
 
-            flowMensile.forEach((v, i) => {
-                const isAttivo = v > 0;
-                htmlCash += `
-                    <div class="p-4 rounded-2xl border ${isAttivo ? 'border-amber-500/40 bg-amber-500/5' : 'border-slate-800 opacity-20'} text-center">
-                        <p class="text-[10px] font-black text-slate-500 uppercase">${MESI_NOMI[i]}</p>
-                        <p class="text-xl font-black ${isAttivo ? 'text-amber-400' : 'text-slate-700'}">€${v.toLocaleString('it-IT', {maximumFractionDigits: 0})}</p>
-                    </div>`;
-            });
-
-            // SCRITTURA FINALE (Sostituisce, non aggiunge)
-            document.getElementById('grid-container').innerHTML = htmlAssets;
-            document.getElementById('conti-container').innerHTML = htmlConti;
-            document.getElementById('cashflow-container').innerHTML = htmlCash;
+            // AGGIORNAMENTO TOTALI
             document.getElementById('totale-display').innerText = "€ " + totCapitale.toLocaleString('it-IT', {minimumFractionDigits: 2});
             document.getElementById('riepilogo-titolari').innerHTML = Object.keys(riepilogo).map(u => `
                 <div class="bg-slate-800 px-4 py-2 rounded-xl border border-slate-700 text-xs font-black uppercase italic shadow-lg">
@@ -173,33 +94,13 @@
                 </div>`).join('');
         }
 
-        async function update(campo, isin, val) {
-            const up = {}; up[campo] = (campo === 'mesi_stacco') ? val : parseFloat(val);
-            await client.from('patrimonio').update(up).eq('isin', isin);
-            caricaDati();
-        }
-
         async function updateSaldo(id, attuale) {
             let n = prompt("Nuovo saldo:", attuale);
-            if(n) { await client.from('conticorrenti').update({saldo: parseFloat(n.replace(',','.'))}).eq('id', id); caricaDati(); }
+            if(n) { 
+                await client.from('conticorrenti').update({saldo: parseFloat(n.replace(',','.'))}).eq('id', id); 
+                caricaDati(); 
+            }
         }
-
-        async function salvaNuovo() {
-            const d = {
-                nome_asset: document.getElementById('new-nome').value,
-                isin: document.getElementById('new-isin').value,
-                titolare: document.getElementById('new-titolare').value,
-                quantita: parseFloat(document.getElementById('new-qta').value),
-                prezzo_di_carico: parseFloat(document.getElementById('new-carico').value),
-                prezzo_unitario: parseFloat(document.getElementById('new-prezzo').value),
-                cedola_percentuale: parseFloat(document.getElementById('new-cedola').value),
-                mesi_stacco: document.getElementById('new-mesi').value
-            };
-            await client.from('patrimonio').insert([d]);
-            location.reload();
-        }
-
-        async function rimuovi(isin) { if(confirm("Eliminare?")) { await client.from('patrimonio').delete().eq('isin', isin); caricaDati(); } }
 
         window.onload = inizializza;
     </script>
