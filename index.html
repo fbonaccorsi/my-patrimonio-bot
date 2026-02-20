@@ -3,40 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patrimonio - Final Badge Fix</title>
+    <title>Patrimonio Gestito</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-[#0f172a] text-slate-200 p-6 md:p-12 font-sans">
+<body class="bg-[#0f172a] text-slate-200 p-4 md:p-8 font-sans">
 
     <div id="app" class="max-w-6xl mx-auto hidden">
-        <header class="mb-12 flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-800/40 p-10 rounded-[3rem] border border-slate-700/50 shadow-2xl">
+        <header class="mb-10 flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-800/40 p-8 rounded-[2rem] border border-slate-700/50 shadow-2xl">
             <div>
-                <h1 class="text-4xl font-black text-white italic uppercase tracking-tighter">💰 PATRIMONIO GESTITO</h1>
-                <div id="totale-display" class="mt-2 text-6xl font-black tracking-tighter text-white italic">---</div>
-                <div id="riepilogo-titolari" class="mt-6 flex flex-wrap gap-4"></div>
+                <h1 class="text-3xl font-black text-white italic uppercase tracking-tighter">💰 PATRIMONIO GESTITO</h1>
+                <div id="totale-display" class="mt-2 text-5xl font-black tracking-tighter text-white">---</div>
+                <div id="riepilogo-titolari" class="mt-4 flex flex-wrap gap-3"></div>
             </div>
+            <button onclick="document.getElementById('form-aggiunta').classList.toggle('hidden')" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-black shadow-xl transition-all">AGGIUNGI</button>
         </header>
 
-        <section class="mb-16 bg-slate-900/60 border border-slate-800 rounded-[3rem] p-8 shadow-inner">
-            <h2 class="text-[11px] font-black text-slate-500 mb-8 uppercase tracking-[0.5em] text-center italic">Scadenzario Cedole Nette</h2>
-            <div id="cashflow-container" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6"></div>
-        </section>
-
-        <div id="grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-20"></div>
+        <div id="grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16"></div>
         
-        <div class="mb-8 flex items-center gap-6">
-            <h2 class="text-3xl font-black text-white uppercase italic tracking-tighter">🏦 CONTI CORRENTI</h2>
+        <div class="mb-6 flex items-center gap-4">
+            <h2 class="text-2xl font-black text-white uppercase italic tracking-tighter">🏦 CONTI CORRENTI</h2>
             <div class="h-px flex-1 bg-slate-800"></div>
         </div>
-        <div id="conti-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 pb-32"></div>
+        <div id="conti-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20"></div>
     </div>
 
     <script>
         const SB_URL = "https://xmwibmjbqcerxrkbepbh.supabase.co";
         const SB_KEY = "sb_publishable_f5oxVaJVgTEtmCRfnjeSng_GSAb5NoO";
         const client = supabase.createClient(SB_URL, SB_KEY);
-        const MESI = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
 
         async function inizializza() {
             let p = prompt("Password:");
@@ -47,71 +42,58 @@
         }
 
         async function caricaDati() {
-            // Svuota i dati per la nuova iniezione (Stop Triplicazione)
             const { data: assets } = await client.from('patrimonio').select('*').order('titolare');
             const { data: conti } = await client.from('conticorrenti').select('*').order('titolare');
 
-            let tot = 0;
-            let flow = Array(12).fill(0);
-            let rip = { 'CLARA': 0, 'FEDERICO': 0, 'ANTONELLA': 0 };
+            let totCapitale = 0;
+            let riepilogo = { 'CLARA': 0, 'FEDERICO': 0, 'ANTONELLA': 0 };
 
-            let assetsHTML = "";
-            let contiHTML = "";
-            let flowHTML = "";
+            // COSTRUZIONE STRINGHE (RIPRISTINO GRAFICA ORIGINALE)
+            let htmlAssets = "";
+            let htmlConti = "";
 
             assets?.forEach(r => {
                 const valore = (parseFloat(r.quantita) * parseFloat(r.prezzo_unitario)) / 100;
-                tot += valore;
-                rip[r.titolare] += valore;
+                totCapitale += valore;
+                riepilogo[r.titolare] += valore;
                 const col = {'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[r.titolare] || 'slate';
 
-                assetsHTML += `
-                    <div class="bg-slate-800 border-l-[12px] border-${col}-500 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
-                        <div class="flex items-center gap-3 mb-4">
-                            <span class="w-3 h-3 rounded-full bg-${col}-500 shadow-[0_0_12px_rgba(59,130,246,0.8)]"></span>
-                            <span class="text-${col}-400 text-[11px] font-black uppercase tracking-[0.2em] italic">${r.titolare}</span>
-                        </div>
-                        <h3 class="text-white font-black text-2xl mb-6 uppercase italic tracking-tighter">${r.nome_asset}</h3>
-                        <p class="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1 italic">Valore Mercato</p>
-                        <p class="text-4xl font-black text-white italic tracking-tighter">€ ${valore.toLocaleString('it-IT', {minimumFractionDigits: 2})}</p>
+                htmlAssets += `
+                    <div class="bg-slate-800 border-l-4 border-${col}-500 rounded-3xl p-6 shadow-2xl relative">
+                        <div class="mb-2 uppercase font-black text-[10px] text-${col}-400 font-mono tracking-widest">${r.titolare}</div>
+                        <h3 class="text-white font-black text-xl mb-4 truncate uppercase tracking-tight italic">${r.nome_asset}</h3>
+                        <p class="text-[9px] text-slate-500 uppercase font-black">Valore</p>
+                        <p class="text-3xl font-black text-white italic">€ ${valore.toLocaleString('it-IT', {minimumFractionDigits: 2})}</p>
                     </div>`;
             });
 
             conti?.forEach(c => {
                 const saldo = parseFloat(c.saldo) || 0;
-                tot += saldo;
-                rip[c.titolare] += saldo;
+                totCapitale += saldo;
+                riepilogo[c.titolare] += saldo;
                 const col = {'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[c.titolare] || 'slate';
                 
-                // --- FIX NOME CONTO ---
-                // Cerco tutte le possibili colonne per evitare 'undefined'
-                const nomeBanca = c.nome_conto || c.banca || c.descrizione || c.istituto || "Conto Corrente";
+                // NOME CONTO (Se la colonna è nome_conto o descrizione)
+                const banca = c.nome_conto || c.descrizione || "Conto Corrente";
 
-                contiHTML += `
-                    <div class="bg-slate-800 border-t-[12px] border-${col}-500 p-8 rounded-[3rem] shadow-xl flex justify-between items-center relative">
+                htmlConti += `
+                    <div class="bg-slate-800 border-t-4 border-${col}-500 p-6 rounded-[2rem] shadow-xl flex justify-between items-center group">
                         <div>
-                            <div class="flex items-center gap-2 mb-3">
-                                <span class="w-3 h-3 rounded-full bg-${col}-400 shadow-[0_0_10px_${col}]"></span>
-                                <span class="text-${col}-400 text-[10px] font-black uppercase italic">${c.titolare}</span>
-                            </div>
-                            <p class="text-slate-400 text-[11px] font-bold uppercase mb-2 italic tracking-tight">${nomeBanca}</p>
-                            <h3 class="text-4xl font-black text-white italic tracking-tighter">€ ${saldo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3>
+                            <p class="text-${col}-400 text-[10px] font-black uppercase mb-1">${c.titolare}</p>
+                            <p class="text-slate-400 text-xs font-bold uppercase mb-2 italic">${banca}</p>
+                            <h3 class="text-3xl font-black text-white italic tracking-tighter">€ ${saldo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3>
                         </div>
-                        <button onclick="updateSaldo('${c.id}', ${saldo})" class="bg-slate-900 p-4 rounded-2xl border border-slate-700 text-slate-500 hover:text-white transition-all text-[10px] font-black uppercase italic shadow-lg">Edit</button>
+                        <button onclick="updateSaldo('${c.id}', ${saldo})" class="bg-slate-900 p-4 rounded-2xl border border-slate-700 text-slate-500 hover:text-white text-[10px] font-black uppercase">Edit</button>
                     </div>`;
             });
 
-            // Riempimento UI
-            document.getElementById('grid-container').innerHTML = assetsHTML;
-            document.getElementById('conti-container').innerHTML = contiHTML;
-            document.getElementById('totale-display').innerText = "€ " + tot.toLocaleString('it-IT', {minimumFractionDigits: 2});
-            
-            // Riepilogo Titoli con Fari
-            document.getElementById('riepilogo-titolari').innerHTML = Object.keys(rip).map(u => `
-                <div class="bg-slate-800 px-5 py-2.5 rounded-2xl border border-slate-700 text-[11px] font-black uppercase italic flex items-center gap-3 shadow-xl">
-                    <span class="w-2.5 h-2.5 rounded-full bg-${{'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[u]}-400 shadow-[0_0_8px_${{'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[u]}]"></span>
-                    <span class="text-${{'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[u]}-400">${u}:</span> 
-                    <span class="text-white ml-1 font-black">€${rip[u].toLocaleString('it-IT', {maximumFractionDigits:0})}</span>
+            // INIEZIONE FINALE (Sostituisce, risolvendo il triplo)
+            document.getElementById('grid-container').innerHTML = htmlAssets;
+            document.getElementById('conti-container').innerHTML = htmlConti;
+            document.getElementById('totale-display').innerText = "€ " + totCapitale.toLocaleString('it-IT', {minimumFractionDigits: 2});
+            document.getElementById('riepilogo-titolari').innerHTML = Object.keys(riepilogo).map(u => `
+                <div class="bg-slate-800 px-4 py-2 rounded-xl border border-slate-700 text-[10px] font-black uppercase italic shadow-lg">
+                    <span class="text-${{'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[u]}-400">${u}:</span> €${riepilogo[u].toLocaleString('it-IT', {maximumFractionDigits:0})}
                 </div>`).join('');
         }
 
