@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patrimonio - Ripristino Originale</title>
+    <title>Patrimonio Gestito - Versione Integrale</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -16,9 +16,7 @@
                 <div id="totale-display" class="mt-2 text-5xl font-black tracking-tighter text-white italic">---</div>
                 <div id="riepilogo-titolari" class="mt-4 flex flex-wrap gap-3"></div>
             </div>
-            <div class="flex gap-2">
-                 <button onclick="document.getElementById('form-aggiunta').classList.toggle('hidden')" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl font-black shadow-xl transition-all uppercase text-xs">Aggiungi</button>
-            </div>
+            <button onclick="document.getElementById('form-aggiunta').classList.toggle('hidden')" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-black shadow-xl transition-all uppercase text-xs">Aggiungi Titolo</button>
         </header>
 
         <section class="mb-12 bg-slate-900/40 border border-slate-800 rounded-[2rem] p-6 shadow-inner">
@@ -28,9 +26,8 @@
 
         <div id="grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16"></div>
         
-        <div class="mb-6 flex items-center gap-4">
+        <div class="mb-6 flex items-center gap-4 border-b border-slate-800 pb-4">
             <h2 class="text-2xl font-black text-white uppercase italic tracking-tighter">🏦 CONTI CORRENTI</h2>
-            <div class="h-px flex-1 bg-slate-800"></div>
         </div>
         <div id="conti-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20"></div>
     </div>
@@ -57,7 +54,6 @@
             let flow = Array(12).fill(0);
             let rip = { 'CLARA': 0, 'FEDERICO': 0, 'ANTONELLA': 0 };
 
-            // Reset dei contenitori per evitare la triplicazione
             let htmlAssets = "";
             let htmlConti = "";
             let htmlCash = "";
@@ -65,9 +61,9 @@
             assets?.forEach(r => {
                 const qta = parseFloat(r.quantita) || 0;
                 const pAtt = parseFloat(r.prezzo_unitario) || 0;
-                const pCar = parseFloat(r.prezzo_di_carico) || 100;
+                const pCar = parseFloat(r.prezzo_di_carico) || 0;
                 const valore = (qta * pAtt) / 100;
-                const performance = ((pAtt - pCar) / pCar) * 100;
+                const perf = pCar > 0 ? ((pAtt - pCar) / pCar) * 100 : 0;
                 
                 tot += valore;
                 rip[r.titolare] += valore;
@@ -76,25 +72,30 @@
                 // Calcolo Cedole
                 if (r.cedola_percentuale > 0 && r.mesi_stacco) {
                     const mesiArr = String(r.mesi_stacco).split(',').map(m => parseInt(m.trim()));
-                    const cedolaNetta = (qta * (parseFloat(r.cedola_percentuale)/100) * 0.875) / mesiArr.length;
-                    mesiArr.forEach(m => { if(m >= 1 && m <= 12) flow[m-1] += cedolaNetta; });
+                    const cedN = (qta * (parseFloat(r.cedola_percentuale)/100) * 0.875) / mesiArr.length;
+                    mesiArr.forEach(m => { if(m >= 1 && m <= 12) flow[m-1] += cedN; });
                 }
 
                 htmlAssets += `
-                    <div class="bg-slate-800 border-l-4 border-${col}-500 rounded-3xl p-6 shadow-2xl relative">
+                    <div class="bg-slate-800 border-l-4 border-${col}-500 rounded-3xl p-6 shadow-2xl relative group">
+                        <button onclick="eliminaTitolo('${r.id}')" class="absolute top-4 right-4 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all font-black text-xs">ELIMINA</button>
                         <div class="flex justify-between items-start mb-4">
                             <span class="text-${col}-400 text-[10px] font-black uppercase tracking-widest">${r.titolare}</span>
-                            <span class="${performance >= 0 ? 'text-emerald-400' : 'text-red-400'} text-[10px] font-bold">${performance >= 0 ? '▲' : '▼'} ${performance.toFixed(2)}%</span>
+                            <span class="${perf >= 0 ? 'text-emerald-400' : 'text-red-400'} text-[10px] font-black italic">${perf >= 0 ? '▲' : '▼'} ${perf.toFixed(2)}%</span>
                         </div>
                         <h3 class="text-white font-black text-xl mb-4 truncate uppercase italic tracking-tight">${r.nome_asset}</h3>
-                        <div class="space-y-1">
-                            <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest">Valore Attuale</p>
-                            <p class="text-3xl font-black text-white italic tracking-tighter">€ ${valore.toLocaleString('it-IT', {minimumFractionDigits: 2})}</p>
+                        <div class="grid grid-cols-2 gap-2 mb-4">
+                            <div>
+                                <p class="text-[8px] text-slate-500 uppercase font-black">Prezzo Carico</p>
+                                <p class="text-sm font-bold text-slate-300">${pCar.toFixed(2)}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-[8px] text-slate-500 uppercase font-black">Prezzo Attuale</p>
+                                <p class="text-sm font-bold text-white">${pAtt.toFixed(2)}</p>
+                            </div>
                         </div>
-                        <div class="mt-4 flex justify-between border-t border-slate-700/50 pt-4 text-[10px]">
-                            <span class="text-slate-500 font-mono">${r.isin || ''}</span>
-                            <span class="text-slate-400 font-bold uppercase italic">Q.tà ${qta.toLocaleString('it-IT')}</span>
-                        </div>
+                        <p class="text-[9px] text-slate-500 uppercase font-black">Valore Totale</p>
+                        <p class="text-3xl font-black text-white italic tracking-tighter">€ ${valore.toLocaleString('it-IT', {minimumFractionDigits: 2})}</p>
                     </div>`;
             });
 
@@ -103,18 +104,17 @@
                 tot += saldo;
                 rip[c.titolare] += saldo;
                 const col = {'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[c.titolare];
-                
-                // NOME CONTO FIXATO (Prova nome_conto o banca o descrizione)
+                // Fix nome banca/conto
                 const banca = c.nome_conto || c.banca || c.descrizione || "Conto Corrente";
 
                 htmlConti += `
                     <div class="bg-slate-800 border-t-4 border-${col}-500 p-6 rounded-[2rem] shadow-xl flex justify-between items-center">
                         <div>
                             <p class="text-${col}-400 text-[10px] font-black uppercase mb-1">${c.titolare}</p>
-                            <p class="text-slate-400 text-xs font-bold uppercase mb-2 italic">${banca}</p>
+                            <p class="text-slate-400 text-xs font-bold uppercase mb-2 italic tracking-tight">${banca}</p>
                             <h3 class="text-3xl font-black text-white italic tracking-tighter">€ ${saldo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3>
                         </div>
-                        <button onclick="updateSaldo('${c.id}', ${saldo})" class="bg-slate-900 px-4 py-2 rounded-xl text-slate-500 hover:text-white transition-all text-[10px] font-black uppercase italic border border-slate-700">Modifica</button>
+                        <button onclick="updateSaldo('${c.id}', ${saldo})" class="bg-slate-900 px-4 py-2 rounded-xl text-slate-500 hover:text-white text-[10px] font-black uppercase italic border border-slate-700">Modifica</button>
                     </div>`;
             });
 
@@ -122,11 +122,10 @@
                 htmlCash += `
                     <div class="p-4 rounded-2xl border ${v > 0 ? 'border-amber-500/40 bg-amber-500/5' : 'border-slate-800 opacity-20'} text-center">
                         <p class="text-[10px] font-black text-slate-500 uppercase">${MESI[i]}</p>
-                        <p class="text-xl font-black ${v > 0 ? 'text-amber-400' : 'text-slate-700'}">€${v.toLocaleString('it-IT', {maximumFractionDigits: 0})}</p>
+                        <p class="text-xl font-black ${v > 0 ? 'text-amber-400' : 'text-slate-700'} italic">€${v.toLocaleString('it-IT', {maximumFractionDigits: 0})}</p>
                     </div>`;
             });
 
-            // Iniezione finale (Sostituisce tutto, addio triplicazione)
             document.getElementById('grid-container').innerHTML = htmlAssets;
             document.getElementById('conti-container').innerHTML = htmlConti;
             document.getElementById('cashflow-container').innerHTML = htmlCash;
@@ -142,6 +141,13 @@
             if(n) { 
                 await client.from('conticorrenti').update({saldo: parseFloat(n.replace(',','.'))}).eq('id', id); 
                 caricaDati(); 
+            }
+        }
+
+        async function eliminaTitolo(id) {
+            if(confirm("Eliminare definitivamente questo titolo?")) {
+                await client.from('patrimonio').delete().eq('id', id);
+                caricaDati();
             }
         }
 
