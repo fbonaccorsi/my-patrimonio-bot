@@ -3,30 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patrimonio Pro - TOTAL FIX</title>
+    <title>Patrimonio Reale - Ripristino Grafico</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .card-shadow { shadow-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    </style>
 </head>
 <body class="bg-[#0f172a] text-slate-200 p-4 md:p-8 font-sans">
 
     <div id="app" class="max-w-6xl mx-auto hidden">
-        <header class="mb-10 flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-800/40 p-8 rounded-3xl border border-slate-700/50 shadow-2xl">
+        <header class="mb-10 flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-800/60 p-8 rounded-[2rem] border border-slate-700/50 shadow-2xl">
             <div>
                 <h1 class="text-3xl font-black text-white italic uppercase tracking-tighter">💰 PATRIMONIO GESTITO</h1>
-                <div id="totale-display" class="mt-2 text-5xl font-black text-white">---</div>
+                <div id="totale-display" class="mt-2 text-5xl font-black text-white tracking-tighter">---</div>
                 <div id="riepilogo-titolari" class="mt-4 flex flex-wrap gap-3"></div>
             </div>
-            <button onclick="document.getElementById('form-aggiunta').classList.toggle('hidden')" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-black shadow-xl transition-all">AGGIUNGI</button>
+            <button onclick="toggleForm()" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-black shadow-xl transition-all uppercase text-sm">Aggiungi Asset</button>
         </header>
 
-        <section class="mb-12 bg-slate-900/60 border border-slate-800 rounded-3xl p-6 shadow-inner">
-            <h2 class="text-[10px] font-black text-slate-500 mb-6 uppercase tracking-[0.4em]">Flusso Cedolare Mensile Netto</h2>
+        <section class="mb-12 bg-slate-900/40 border border-slate-800 rounded-[2rem] p-6 shadow-inner">
+            <h2 class="text-[10px] font-black text-slate-500 mb-6 uppercase tracking-[0.4em] flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Scadenziario Cedole Nette
+            </h2>
             <div id="cashflow-container" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
         </section>
 
         <div id="grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16"></div>
         
-        <h2 class="text-xl font-black text-white uppercase italic mb-6 tracking-tighter">🏦 CONTI CORRENTI</h2>
+        <div class="mb-6 flex items-center gap-4">
+            <h2 class="text-2xl font-black text-white uppercase italic tracking-tighter">🏦 CONTI CORRENTI</h2>
+            <div class="h-px flex-1 bg-slate-800"></div>
+        </div>
         <div id="conti-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20"></div>
     </div>
 
@@ -35,9 +44,6 @@
         const SB_KEY = "sb_publishable_f5oxVaJVgTEtmCRfnjeSng_GSAb5NoO";
         const client = supabase.createClient(SB_URL, SB_KEY);
         const MESI_NOMI = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
-        
-        // VARIABILE DI BLOCCO CRITICA
-        let staCaricando = false;
 
         async function inizializza() {
             let p = prompt("Password:");
@@ -48,10 +54,7 @@
         }
 
         async function caricaDati() {
-            if (staCaricando) return; // Se sta già calcolando, blocca le altre chiamate
-            staCaricando = true;
-
-            // Reset totale dei div
+            // PULIZIA RADICALE PER EVITARE DUPLICAZIONI
             document.getElementById('grid-container').innerHTML = "";
             document.getElementById('conti-container').innerHTML = "";
             document.getElementById('cashflow-container').innerHTML = "";
@@ -63,7 +66,7 @@
             let totCapitale = 0;
             let riepilogo = { 'CLARA': 0, 'FEDERICO': 0, 'ANTONELLA': 0 };
 
-            // ELABORAZIONE TITOLI
+            // RENDERING ASSET (PATRIMONIO)
             assets?.forEach(r => {
                 const qta = parseFloat(r.quantita) || 0;
                 const pAtt = parseFloat(r.prezzo_unitario) || 0;
@@ -72,37 +75,44 @@
                 
                 const valore = (qta * pAtt) / 100;
                 const perf = ((pAtt - pCar) / pCar) * 100;
-                
                 totCapitale += valore;
                 riepilogo[r.titolare] += valore;
-                const col = {'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[r.titolare];
+                
+                const col = {'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[r.titolare] || 'slate';
 
-                // CALCOLO CEDOLA (FISSO E UNICO)
+                // Calcolo Cedola (Semplice come richiesto)
                 if (cPerc > 0 && r.mesi_stacco) {
-                    const mesiArr = String(r.mesi_stacco).split(',').map(m => parseInt(m.trim())).filter(m => !isNaN(m));
-                    if (mesiArr.length > 0) {
-                        const nettoRata = ((qta * (cPerc / 100)) * 0.875) / mesiArr.length;
-                        mesiArr.forEach(m => { if(m>=1 && m<=12) flowMensile[m-1] += nettoRata; });
-                    }
+                    const mesi = r.mesi_stacco.split(',').map(m => parseInt(m.trim()));
+                    const nettoRata = ((qta * (cPerc/100)) * 0.875) / mesi.length;
+                    mesi.forEach(m => { if(m >= 1 && m <= 12) flowMensile[m-1] += nettoRata; });
                 }
 
                 document.getElementById('grid-container').innerHTML += `
-                    <div class="bg-slate-800 border-l-4 border-${col}-500 rounded-3xl p-6 shadow-xl">
-                        <div class="flex justify-between items-center mb-4 uppercase font-black text-[10px]">
-                            <span class="text-${col}-400 bg-${col}-500/10 px-2 py-1 rounded">${r.titolare}</span>
-                            <span class="${perf >= 0 ? 'text-emerald-400' : 'text-red-400'}">${perf >= 0 ? '+' : ''}${perf.toFixed(2)}%</span>
+                    <div class="bg-slate-800 border-l-4 border-${col}-500 rounded-3xl p-6 shadow-2xl relative group">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="px-2 py-1 bg-slate-900 text-${col}-400 text-[10px] font-black rounded border border-slate-700 uppercase">${r.titolare}</span>
+                            <span class="${perf >= 0 ? 'text-emerald-400' : 'text-red-400'} text-xs font-black font-mono">${perf >= 0 ? '+' : ''}${perf.toFixed(2)}%</span>
                         </div>
-                        <h3 class="text-white font-black text-xl mb-4 truncate">${r.nome_asset}</h3>
-                        <div class="mb-4"><p class="text-[9px] text-slate-500 uppercase">Valore Mercato</p>
-                        <p class="text-3xl font-black text-white italic">€ ${valore.toLocaleString('it-IT', {minimumFractionDigits:2})}</p></div>
-                        <div class="grid grid-cols-2 gap-2 bg-slate-900/60 p-3 rounded-xl text-sm border border-slate-700/50">
-                            <div><p class="text-[8px] text-slate-500 uppercase">Cedola %</p><input type="number" step="0.01" value="${cPerc}" onchange="update('cedola_percentuale','${r.isin}',this.value)" class="bg-transparent text-amber-400 font-bold outline-none"></div>
-                            <div><p class="text-[8px] text-slate-500 uppercase">Mesi</p><input type="text" value="${r.mesi_stacco}" onchange="update('mesi_stacco','${r.isin}',this.value)" class="bg-transparent text-white font-bold outline-none"></div>
+                        <h3 class="text-white font-black text-xl mb-4 truncate uppercase tracking-tight">${r.nome_asset}</h3>
+                        <div class="mb-4">
+                            <p class="text-[9px] text-slate-500 uppercase font-black">Valore di Mercato</p>
+                            <p class="text-3xl font-black text-white italic">€ ${valore.toLocaleString('it-IT', {minimumFractionDigits: 2})}</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
+                            <div><p class="text-[8px] text-slate-500 uppercase font-black">Cedola %</p>
+                                <input type="number" step="0.01" value="${cPerc}" onchange="update('cedola_percentuale','${r.isin}',this.value)" class="bg-transparent text-amber-400 font-bold outline-none w-full"></div>
+                            <div><p class="text-[8px] text-slate-500 uppercase font-black">Mesi Stacco</p>
+                                <input type="text" value="${r.mesi_stacco}" onchange="update('mesi_stacco','${r.isin}',this.value)" class="bg-transparent text-white font-bold outline-none w-full"></div>
+                        </div>
+                        <div class="mt-4 grid grid-cols-3 gap-1 text-[9px] text-center opacity-60 group-hover:opacity-100 transition-opacity">
+                            <div><p>CARICO</p><input type="number" value="${pCar}" onchange="update('prezzo_di_carico','${r.isin}',this.value)" class="bg-transparent text-white text-center w-full outline-none"></div>
+                            <div><p>ATTUALE</p><input type="number" value="${pAtt}" onchange="update('prezzo_unitario','${r.isin}',this.value)" class="bg-transparent text-white text-center w-full outline-none"></div>
+                            <div><p>NOMINALE</p><input type="number" value="${qta}" onchange="update('quantita','${r.isin}',this.value)" class="bg-transparent text-white text-center w-full outline-none"></div>
                         </div>
                     </div>`;
             });
 
-            // ELABORAZIONE CONTI CORRENTI (Formattazione Ripristinata)
+            // RENDERING CONTI CORRENTI (FORMATTAZIONE ORIGINALE)
             conti?.forEach(c => {
                 const saldo = parseFloat(c.saldo) || 0;
                 totCapitale += saldo;
@@ -110,31 +120,31 @@
                 const col = {'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[c.titolare];
                 
                 document.getElementById('conti-container').innerHTML += `
-                    <div class="bg-slate-800 border-t-2 border-${col}-500 p-6 rounded-3xl shadow-xl flex justify-between items-center group">
+                    <div class="bg-slate-800 border-t-4 border-${col}-500 p-6 rounded-[2rem] shadow-xl flex justify-between items-center group">
                         <div>
-                            <p class="text-${col}-400 text-[10px] font-black uppercase tracking-widest mb-1">${c.titolare}</p>
+                            <p class="text-${col}-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">${c.titolare}</p>
                             <h3 class="text-3xl font-black text-white italic tracking-tighter">€ ${saldo.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3>
                         </div>
-                        <button onclick="updateSaldo('${c.id}', ${saldo})" class="bg-slate-900 p-3 rounded-2xl border border-slate-700 text-slate-400 hover:text-white transition-all text-[10px] font-black uppercase">EDIT</button>
+                        <button onclick="updateSaldo('${c.id}', ${saldo})" class="bg-slate-900 p-4 rounded-2xl border border-slate-700 text-slate-500 group-hover:text-white transition-all text-[10px] font-black uppercase">Modifica</button>
                     </div>`;
             });
 
-            // RENDER CALENDARIO
+            // CALENDARIO
             flowMensile.forEach((v, i) => {
+                const isAttivo = v > 0;
                 document.getElementById('cashflow-container').innerHTML += `
-                    <div class="p-4 rounded-2xl border ${v > 0 ? 'border-amber-500/40 bg-amber-500/5' : 'border-slate-800 opacity-20'} text-center">
+                    <div class="p-4 rounded-2xl border ${isAttivo ? 'border-amber-500/40 bg-amber-500/5' : 'border-slate-800 opacity-20'} text-center">
                         <p class="text-[10px] font-black text-slate-500 uppercase">${MESI_NOMI[i]}</p>
-                        <p class="text-xl font-black ${v > 0 ? 'text-amber-400' : 'text-slate-700'}">€${v.toLocaleString('it-IT', {maximumFractionDigits: 0})}</p>
+                        <p class="text-xl font-black ${isAttivo ? 'text-amber-400' : 'text-slate-700'}">€${v.toLocaleString('it-IT', {maximumFractionDigits: 0})}</p>
                     </div>`;
             });
 
+            // TOTALI FINALI
             document.getElementById('totale-display').innerText = "€ " + totCapitale.toLocaleString('it-IT', {minimumFractionDigits: 2});
             document.getElementById('riepilogo-titolari').innerHTML = Object.keys(riepilogo).map(u => `
-                <div class="bg-slate-800 px-4 py-2 rounded-2xl border border-slate-700 text-xs font-black uppercase italic shadow-lg">
+                <div class="bg-slate-800 px-4 py-2 rounded-xl border border-slate-700 text-xs font-black uppercase italic shadow-lg">
                     <span class="text-${{'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[u]}-400">${u}:</span> €${riepilogo[u].toLocaleString('it-IT', {maximumFractionDigits:0})}
                 </div>`).join('');
-
-            staCaricando = false; // Rilascia il blocco
         }
 
         async function update(campo, isin, val) {
@@ -148,6 +158,7 @@
             if(n) { await client.from('conticorrenti').update({saldo: parseFloat(n.replace(',','.'))}).eq('id', id); caricaDati(); }
         }
 
+        function toggleForm() { /* Aggiungi qui la logica del form se serve */ }
         window.onload = inizializza;
     </script>
 </body>
