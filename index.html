@@ -3,26 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patrimonio Pro - Calcolo Esatto</title>
+    <title>Patrimonio Pro - Fix Definitivo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-[#0f172a] text-slate-200 p-4 md:p-8 font-sans">
 
     <div id="app" class="max-w-6xl mx-auto hidden">
-        <header class="mb-10 flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-800/40 p-6 rounded-3xl border border-slate-700/50 shadow-2xl">
-            <div>
-                <h1 class="text-3xl font-black text-white italic uppercase tracking-tighter">💰 PATRIMONIO GESTITO</h1>
-                <div id="totale-display" class="mt-2 text-4xl font-black tracking-tighter text-white">---</div>
-                <div id="riepilogo-titolari" class="mt-4 flex flex-wrap gap-3"></div>
-            </div>
-            <button onclick="toggleForm()" class="bg-blue-500 hover:bg-blue-400 text-white px-8 py-4 rounded-2xl font-black shadow-xl transition-all">NUOVO ASSET</button>
+        <header class="mb-10 bg-slate-800/40 p-6 rounded-3xl border border-slate-700/50 shadow-2xl">
+            <h1 class="text-3xl font-black text-white italic uppercase tracking-tighter">💰 PATRIMONIO GESTITO</h1>
+            <div id="totale-display" class="mt-2 text-4xl font-black text-white">---</div>
+            <div id="riepilogo-titolari" class="mt-4 flex flex-wrap gap-3"></div>
         </header>
 
-        <section class="mb-12 bg-slate-900/40 border border-slate-800 rounded-3xl p-6 shadow-inner">
-            <h2 class="text-[10px] font-black text-slate-500 mb-6 uppercase tracking-[0.4em] flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Cedole Nette (Tassa 12.5% applicata)
-            </h2>
+        <section class="mb-12 bg-slate-900/40 border border-slate-800 rounded-3xl p-6">
+            <h2 class="text-[10px] font-black text-slate-500 mb-6 uppercase tracking-[0.4em]">Cedole Nette (12.5% Tax)</h2>
             <div id="cashflow-container" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 text-center"></div>
         </section>
 
@@ -36,122 +31,108 @@
         const client = supabase.createClient(SB_URL, SB_KEY);
         const MESI_NOMI = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
 
-        function getCol(t) { return {'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[t] || 'slate'; }
-
         async function inizializza() {
             let p = prompt("Accesso:");
             if (p?.toLowerCase() === "milano") {
                 document.getElementById('app').classList.remove('hidden');
-                caricaDati();
+                await caricaDati();
             } else { document.body.innerHTML = "Accesso negato."; }
         }
 
         async function caricaDati() {
+            // 1. Reset immediato di tutti i contenitori visivi
+            document.getElementById('grid-container').innerHTML = "";
+            document.getElementById('conti-container').innerHTML = "";
+            document.getElementById('cashflow-container').innerHTML = "";
+
             const [resP, resC] = await Promise.all([
                 client.from('patrimonio').select('*').order('titolare'),
                 client.from('conticorrenti').select('*').order('titolare')
             ]);
 
-            const cT = document.getElementById('grid-container');
-            const cC = document.getElementById('conti-container');
-            const cF = document.getElementById('cashflow-container');
-            
-            // RESET TOTALE DEI CONTENITORI PER EVITARE DUPLICAZIONI
-            cT.innerHTML = ""; cC.innerHTML = ""; cF.innerHTML = "";
-            let flowMensile = Array(12).fill(0);
-            let totP = 0, totC = 0, perU = {'CLARA':0, 'FEDERICO':0, 'ANTONELLA':0};
+            // 2. Variabili locali (non globali) per evitare accumuli
+            let calcoloMesi = [0,0,0,0,0,0,0,0,0,0,0,0];
+            let patrimonioTotale = 0;
+            let saldiTitolari = {'CLARA':0, 'FEDERICO':0, 'ANTONELLA':0};
 
-            resP.data?.forEach(r => {
-                const nominale = parseFloat(r.quantita) || 0;
-                const prAtt = parseFloat(r.prezzo_unitario) || 0;
-                const prCar = parseFloat(r.prezzo_di_carico) || 100;
-                const cedPerc = parseFloat(r.cedola_percentuale) || 0;
+            // 3. Elaborazione Asset
+            if (resP.data) {
+                resP.data.forEach(r => {
+                    const nominale = parseFloat(r.quantita) || 0;
+                    const prezzo = parseFloat(r.prezzo_unitario) || 0;
+                    const cedolaPerc = parseFloat(r.cedola_percentuale) || 0;
+                    const mesiStacco = String(r.mesi_stacco || "").split(',').map(m => parseInt(m.trim())).filter(m => !isNaN(m));
 
-                // 1. VALORE DI MERCATO
-                const valMercato = (nominale * prAtt) / 100;
-                totP += valMercato;
-                perU[r.titolare] += valMercato;
+                    // Valore di mercato
+                    const valore = (nominale * prezzo) / 100;
+                    patrimonioTotale += valore;
+                    saldiTitolari[r.titolare] = (saldiTitolari[r.titolare] || 0) + valore;
 
-                // 2. CALCOLO CEDOLA (70000 * 2% * 0.875 = 1225)
-                if(cedPerc > 0 && r.mesi_stacco) {
-                    const mesiArr = String(r.mesi_stacco).split(',').map(m => parseInt(m.trim())).filter(m => !isNaN(m));
-                    if(mesiArr.length > 0) {
-                        const cedolaNettaTotaleAnnua = (nominale * (cedPerc / 100)) * 0.875;
-                        const singolaCedola = cedolaNettaTotaleAnnua / mesiArr.length;
+                    // Calcolo Cedola Netta (70000 * 2% * 0.875 / numero stacchi)
+                    if (cedolaPerc > 0 && mesiStacco.length > 0) {
+                        const nettoAnnuo = (nominale * (cedolaPerc / 100)) * 0.875;
+                        const singolaRata = nettoAnnuo / mesiStacco.length;
                         
-                        mesiArr.forEach(m => {
-                            if(m >= 1 && m <= 12) flowMensile[m-1] += singolaCedola;
+                        mesiStacco.forEach(m => {
+                            if (m >= 1 && m <= 12) {
+                                calcoloMesi[m-1] += singolaRata;
+                            }
                         });
                     }
-                }
 
-                const col = getCol(r.titolare);
-                const perf = ((prAtt - prCar) / prCar) * 100;
+                    // Render Card
+                    const col = {'CLARA':'blue','FEDERICO':'emerald','ANTONELLA':'purple'}[r.titolare] || 'slate';
+                    document.getElementById('grid-container').innerHTML += `
+                        <div class="bg-slate-800 border-l-4 border-${col}-500 rounded-3xl p-6 shadow-xl">
+                            <div class="text-${col}-400 text-[10px] font-bold uppercase mb-2">${r.titolare}</div>
+                            <h3 class="text-white font-black text-lg uppercase mb-4">${r.nome_asset}</h3>
+                            <div class="bg-slate-900/50 p-3 rounded-xl">
+                                <p class="text-[8px] text-slate-500 uppercase font-black">Valore Mercato</p>
+                                <p class="text-xl font-black text-white">€ ${valore.toLocaleString('it-IT', {minimumFractionDigits:2})}</p>
+                            </div>
+                            <div class="mt-4 grid grid-cols-2 gap-2 text-[10px] text-slate-400">
+                                <div>NOMINALE: <span class="text-white font-bold">${nominale}</span></div>
+                                <div>CEDOLA: <span class="text-amber-400 font-bold">${cedolaPerc}%</span></div>
+                            </div>
+                        </div>`;
+                });
+            }
 
-                cT.innerHTML += `
-                    <div class="bg-slate-800 border-l-4 border-${col}-500 rounded-3xl p-6 shadow-xl relative">
-                        <div class="flex justify-between items-start mb-4">
-                            <span class="px-2 py-1 bg-slate-900 text-${col}-400 text-[10px] font-bold rounded border border-slate-700 uppercase">${r.titolare}</span>
-                            <span class="font-bold text-${perf >= 0 ? 'emerald' : 'red'}-400 text-xs">${perf >= 0 ? '+' : ''}${perf.toFixed(2)}%</span>
-                        </div>
-                        <h3 class="text-white font-black text-lg uppercase truncate mb-1">${r.nome_asset}</h3>
-                        <p class="text-[9px] text-slate-500 uppercase font-black mb-1">Controvalore</p>
-                        <h3 class="text-2xl font-black text-white italic mb-4">€ ${valMercato.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3>
-                        
-                        <div class="grid grid-cols-2 gap-2 bg-slate-900/50 p-3 rounded-xl mb-4">
-                            <div><p class="text-slate-500 text-[8px] uppercase font-black">Cedola %</p>
-                                 <input type="number" step="0.01" value="${cedPerc}" onchange="agg('cedola_percentuale','${r.isin}',this.value)" class="bg-transparent text-amber-400 font-bold w-full outline-none"></div>
-                            <div><p class="text-slate-500 text-[8px] uppercase font-black">Mesi</p>
-                                 <input type="text" value="${r.mesi_stacco}" onchange="agg('mesi_stacco','${r.isin}',this.value)" class="bg-transparent text-white font-bold w-full outline-none"></div>
-                        </div>
-
-                        <div class="grid grid-cols-3 gap-2 text-center text-[10px]">
-                            <div><p class="text-slate-500">CARICO</p><input type="number" step="0.01" value="${prCar}" onchange="agg('prezzo_di_carico','${r.isin}',this.value)" class="bg-transparent text-white w-full text-center outline-none"></div>
-                            <div><p class="text-slate-500">ATTUALE</p><input type="number" step="0.01" value="${prAtt}" onchange="agg('prezzo_unitario','${r.isin}',this.value)" class="bg-transparent text-white w-full text-center outline-none"></div>
-                            <div><p class="text-slate-500">NOMINALE</p><input type="number" value="${nominale}" onchange="agg('quantita','${r.isin}',this.value)" class="bg-transparent text-white w-full text-center outline-none"></div>
-                        </div>
-                    </div>`;
-            });
-
-            // RENDER CALENDARIO
-            flowMensile.forEach((val, i) => {
-                const isAttivo = val > 0;
-                cF.innerHTML += `
-                    <div class="p-4 rounded-2xl border ${isAttivo ? 'border-amber-500/50 bg-amber-500/5 shadow-lg' : 'border-slate-800 opacity-30'}">
+            // 4. Render Calendario (Senza accumulo)
+            calcoloMesi.forEach((valore, i) => {
+                const opacity = valore > 0 ? "100" : "20";
+                document.getElementById('cashflow-container').innerHTML += `
+                    <div class="p-4 rounded-2xl border border-slate-800 bg-slate-900/20 opacity-${opacity}">
                         <p class="text-[10px] font-bold text-slate-500 uppercase">${MESI_NOMI[i]}</p>
-                        <p class="text-lg font-black ${isAttivo ? 'text-amber-400' : 'text-slate-700'}">€${val.toLocaleString('it-IT', {maximumFractionDigits: 0})}</p>
+                        <p class="text-lg font-black ${valore > 0 ? 'text-amber-400' : 'text-slate-700'}">
+                            €${valore.toLocaleString('it-IT', {maximumFractionDigits: 0})}
+                        </p>
                     </div>`;
             });
 
-            // CONTI CORRENTI
-            resC.data?.forEach(c => {
-                totC += c.saldo; perU[c.titolare] += c.saldo;
-                cC.innerHTML += `<div class="bg-slate-800/40 border border-slate-700 p-6 rounded-3xl flex justify-between items-center">
-                    <div><p class="text-[10px] text-${getCol(c.titolare)}-400 font-bold uppercase">${c.titolare}</p><h3 class="text-xl font-bold text-white">€${c.saldo.toLocaleString('it-IT')}</h3></div>
-                    <button onclick="aggSaldo('${c.id}',${c.saldo})" class="text-slate-500 hover:text-white font-bold text-xs">EDIT</button>
-                </div>`;
-            });
+            // 5. Conti Correnti
+            if (resC.data) {
+                resC.data.forEach(c => {
+                    const saldo = parseFloat(c.saldo) || 0;
+                    patrimonioTotale += saldo;
+                    saldiTitolari[c.titolare] = (saldiTitolari[c.titolare] || 0) + saldo;
+                    document.getElementById('conti-container').innerHTML += `
+                        <div class="bg-slate-800/40 border border-slate-700 p-6 rounded-3xl flex justify-between items-center">
+                            <div><p class="text-[10px] font-bold uppercase">${c.titolare}</p><h3 class="text-xl font-bold text-white">€${saldo.toLocaleString('it-IT')}</h3></div>
+                        </div>`;
+                });
+            }
 
-            document.getElementById('totale-display').innerText = "€ " + (totP + totC).toLocaleString('it-IT', {minimumFractionDigits: 2});
-            document.getElementById('riepilogo-titolari').innerHTML = Object.keys(perU).map(u => `
-                <div class="bg-slate-800 px-3 py-1 rounded-xl border border-slate-700 text-xs font-bold uppercase">
-                    <span class="text-${getCol(u)}-400">${u}:</span> €${perU[u].toLocaleString('it-IT', {maximumFractionDigits:0})}
-                </div>`).join('');
+            document.getElementById('totale-display').innerText = "€ " + patrimonioTotale.toLocaleString('it-IT', {minimumFractionDigits: 2});
+            
+            // Riepilogo Titolari
+            let rip = "";
+            for (let u in saldiTitolari) {
+                rip += `<div class="bg-slate-800 px-4 py-2 rounded-xl border border-slate-700 text-xs font-bold uppercase italic">${u}: €${saldiTitolari[u].toLocaleString('it-IT', {maximumFractionDigits:0})}</div>`;
+            }
+            document.getElementById('riepilogo-titolari').innerHTML = rip;
         }
 
-        // FUNZIONE UNICA AGGIORNAMENTO
-        async function agg(campo, isin, val) {
-            const up = {}; up[campo] = (campo === 'mesi_stacco') ? val : parseFloat(val);
-            await client.from('patrimonio').update(up).eq('isin', isin);
-            caricaDati();
-        }
-
-        async function aggSaldo(id, attuale) {
-            let n = prompt("Nuovo saldo:", attuale);
-            if(n) { await client.from('conticorrenti').update({saldo: parseFloat(n)}).eq('id', id); caricaDati(); }
-        }
-
-        function toggleForm() { /* ... */ }
         window.onload = inizializza;
     </script>
 </body>
