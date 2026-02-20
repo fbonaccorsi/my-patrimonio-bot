@@ -33,18 +33,18 @@
         <div id="form-aggiunta" class="hidden mb-10 bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-2xl card-enter">
             <h2 class="text-xl font-bold mb-6 text-blue-400 uppercase">Inserimento Titolo</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <input type="text" id="new-nome" placeholder="Nome Asset (es. BTP MAG 33)" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
+                <input type="text" id="new-nome" placeholder="Nome Asset" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
                 <input type="text" id="new-isin" placeholder="Codice ISIN" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
-                <select id="new-titolare" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
+                <select id="new-titolare" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
                     <option value="CLARA">CLARA</option>
                     <option value="FEDERICO">FEDERICO</option>
                     <option value="ANTONELLA">ANTONELLA</option>
                 </select>
-                <input type="number" step="0.01" id="new-qta" placeholder="Quantità Nominale" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
-                <input type="number" step="0.01" id="new-carico" placeholder="Prezzo di Carico" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
-                <input type="number" step="0.01" id="new-prezzo" placeholder="Prezzo Attuale" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
-                <input type="number" step="0.01" id="new-cedola" placeholder="Cedola Annua %" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
-                <input type="text" id="new-mesi" placeholder="Mesi Stacco (es: 03,09)" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white">
+                <input type="number" step="0.01" id="new-qta" placeholder="Quantità Nominale" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
+                <input type="number" step="0.01" id="new-carico" placeholder="Prezzo di Carico" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
+                <input type="number" step="0.01" id="new-prezzo" placeholder="Prezzo Attuale" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
+                <input type="number" step="0.01" id="new-cedola" placeholder="Cedola Annua %" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
+                <input type="text" id="new-mesi" placeholder="Mesi Stacco (es: 03,09)" class="bg-slate-900 border border-slate-700 p-3 rounded-xl text-white outline-none">
             </div>
             <div class="mt-6 flex gap-3">
                 <button onclick="salvaNuovo()" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-bold">SALVA</button>
@@ -53,7 +53,6 @@
         </div>
 
         <div id="grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16"></div>
-        
         <div id="conti-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20"></div>
     </div>
 
@@ -91,22 +90,27 @@
                 const qta = parseFloat(r.quantita) || 0;
                 const prAtt = parseFloat(r.prezzo_unitario) || 0;
                 const prCar = parseFloat(r.prezzo_di_carico) || 100;
+
+                // 1. CONTROVALORE CORRETTO (Prezzo in centesimi)
                 const valAtt = (qta * prAtt) / 100;
-                
+
+                // 2. PERFORMANCE
                 const performance = ((prAtt - prCar) / prCar) * 100;
                 const colPerf = performance >= 0 ? 'emerald' : 'red';
-                
-                totP += valAtt; perU[r.titolare] += valAtt;
+
+                totP += valAtt; 
+                perU[r.titolare] += valAtt;
                 const col = getCol(r.titolare);
 
-                // GESTIONE CEDOLE
+                // 3. CALCOLO CEDOLE (Logica Definitiva)
                 if(r.cedola_percentuale > 0 && r.mesi_stacco) {
                     const mesiArr = r.mesi_stacco.split(',').map(m => m.trim());
-                    // Calcolo: (Nominale * Cedola% / 100 / NumRate) * 0.875
-                    const nettoSingolo = ((qta * (parseFloat(r.cedola_percentuale)/100)) / mesiArr.length) * 0.875;
+                    const numRate = mesiArr.length;
+                    const cedNettaSingola = ((qta * (parseFloat(r.cedola_percentuale) / 100)) / numRate) * 0.875;
+                    
                     mesiArr.forEach(m => {
                         const idx = parseInt(m) - 1;
-                        if(idx >= 0 && idx < 12) flowMensile[idx] += nettoSingolo;
+                        if(idx >= 0 && idx < 12) flowMensile[idx] += cedNettaSingola;
                     });
                 }
 
@@ -121,19 +125,16 @@
                                 ${performance >= 0 ? '+' : ''}${performance.toFixed(2)}%
                             </span>
                         </div>
-
                         <div class="mb-4">
                             <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest">Controvalore</p>
                             <h3 class="text-3xl font-black text-white">€ ${valAtt.toLocaleString('it-IT', {minimumFractionDigits: 2})}</h3>
                         </div>
-
                         <div class="grid grid-cols-2 gap-3 bg-slate-900/60 p-3 rounded-2xl mb-4 border border-slate-700/50">
-                            <div><p class="text-slate-500 text-[8px] uppercase font-black mb-1">Cedola Annua %</p>
+                            <div><p class="text-slate-500 text-[8px] uppercase font-black mb-1">Cedola %</p>
                                 <input type="number" step="0.01" value="${r.cedola_percentuale}" onchange="aggCed('${r.isin}', this.value)" class="bg-transparent font-bold text-amber-400 w-full outline-none text-sm"></div>
                             <div><p class="text-slate-500 text-[8px] uppercase font-black mb-1">Mesi Stacco</p>
                                 <input type="text" value="${r.mesi_stacco || ''}" onchange="aggMesi('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full outline-none text-sm"></div>
                         </div>
-
                         <div class="grid grid-cols-3 gap-2 bg-slate-900/30 p-2 rounded-xl border border-slate-700/30">
                             <div><p class="text-[7px] text-slate-500 uppercase font-black text-center">Carico</p>
                                 <input type="number" step="0.01" value="${prCar}" onchange="aggCarico('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full text-center outline-none text-[10px]"></div>
@@ -142,7 +143,6 @@
                             <div><p class="text-[7px] text-slate-500 uppercase font-black text-center">Q.tà Nom.</p>
                                 <input type="number" value="${qta}" onchange="aggQ('${r.isin}', this.value)" class="bg-transparent font-bold text-white w-full text-center outline-none text-[10px]"></div>
                         </div>
-
                         <div class="mt-4 flex justify-between items-center opacity-30">
                             <p class="text-[8px] font-mono">${r.isin}</p>
                             <button onclick="elimina('${r.isin}')" class="text-red-500 hover:text-red-400 text-[9px] font-black uppercase">Rimuovi</button>
@@ -160,24 +160,24 @@
 
             resC.data?.forEach(c => {
                 totC += (c.saldo || 0); perU[c.titolare] += (c.saldo || 0);
-                cC.innerHTML += `<div class="bg-slate-800/40 border border-slate-700 p-6 rounded-3xl flex justify-between items-center">
-                    <div><p class="text-${getCol(c.titolare)}-400 text-[10px] font-black uppercase mb-1">${c.titolare}</p><h3 class="text-2xl font-bold text-white">€${c.saldo.toLocaleString('it-IT')}</h3></div>
-                    <button onclick="aggS('${c.id}', ${c.saldo})" class="bg-slate-900 p-2 rounded-xl text-slate-400 hover:text-white border border-slate-700">✎</button>
+                const col = getCol(c.titolare);
+                cC.innerHTML += `<div class="bg-slate-800/40 border border-slate-700 p-6 rounded-3xl flex justify-between items-center shadow-lg">
+                    <div><p class="text-${col}-400 text-[10px] font-black uppercase mb-1">${c.titolare}</p><h3 class="text-2xl font-bold text-white">€${c.saldo.toLocaleString('it-IT')}</h3></div>
+                    <button onclick="aggS('${c.id}', ${c.saldo})" class="bg-slate-900 p-2 rounded-xl text-slate-400 hover:text-white border border-slate-700 transition-all">✎</button>
                 </div>`;
             });
 
             document.getElementById('totale-display').innerText = "€ " + (totP + totC).toLocaleString('it-IT', {minimumFractionDigits: 2});
             let rip = "";
-            for (let u in perU) { 
+            for (let u in perU) {
                 const c = getCol(u);
-                rip += `<div class="bg-slate-800 px-4 py-2 rounded-2xl border border-slate-700 flex items-center gap-2 font-bold text-xs uppercase">
+                rip += `<div class="bg-slate-800 px-4 py-2 rounded-2xl border border-slate-700 flex items-center gap-2 font-bold text-xs uppercase shadow-md">
                     <span class="w-2 h-2 rounded-full bg-${c}-500"></span> <span class="text-${c}-400">${u}:</span> <span class="text-white font-mono">€${perU[u].toLocaleString('it-IT')}</span>
                 </div>`;
             }
             document.getElementById('riepilogo-titolari').innerHTML = rip;
         }
 
-        // FUNZIONI AGGIORNAMENTO
         async function aggCed(isin, v) { await client.from('patrimonio').update({ cedola_percentuale: parseFloat(v) }).eq('isin', isin); caricaDati(); }
         async function aggMesi(isin, v) { await client.from('patrimonio').update({ mesi_stacco: v }).eq('isin', isin); caricaDati(); }
         async function aggP(isin, v) { await client.from('patrimonio').update({ prezzo_unitario: parseFloat(v) }).eq('isin', isin); caricaDati(); }
@@ -185,6 +185,7 @@
         async function aggCarico(isin, v) { await client.from('patrimonio').update({ prezzo_di_carico: parseFloat(v) }).eq('isin', isin); caricaDati(); }
         async function aggS(id, att) { let n = prompt("Nuovo saldo:", att); if(n) { await client.from('conticorrenti').update({ saldo: parseFloat(n.replace(',','.')) }).eq('id', id); caricaDati(); } }
         async function elimina(isin) { if(confirm("Confermi eliminazione?")) { await client.from('patrimonio').delete().eq('isin', isin); caricaDati(); } }
+        
         async function salvaNuovo() {
             const data = {
                 isin: document.getElementById('new-isin').value,
@@ -200,6 +201,7 @@
             await client.from('patrimonio').insert([data]);
             toggleForm(); caricaDati();
         }
+        
         function toggleForm() { document.getElementById('form-aggiunta').classList.toggle('hidden'); }
         window.onload = inizializza;
     </script>
